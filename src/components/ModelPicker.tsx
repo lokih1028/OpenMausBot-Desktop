@@ -11,6 +11,7 @@ import { EngineSetup, needsCli, needsSignIn } from "./EngineSetup";
 import { EngineGroupLabel } from "./EngineGroupLabel";
 import { cn } from "@/lib/cn";
 import { COMPACT_SQUARE } from "@/lib/compact-chip";
+import { useT } from "@/i18n";
 
 type ModelOption = InstanceInfo["models"]["options"][number];
 const COMPACT_MODEL_COUNT = 5;
@@ -36,6 +37,7 @@ function ModelRow({
   defaultId: string;
   onPick: () => void;
 }) {
+  const { t } = useT();
   return (
     <button
       type="button"
@@ -48,10 +50,10 @@ function ModelRow({
       <span className="flex min-w-0 items-center gap-2">
         <span className="truncate">{option.label}</span>
         {option.id === defaultId && (
-          <span className="shrink-0 rounded bg-inset px-1.5 py-px text-[10px] text-ink-secondary">Default</span>
+          <span className="shrink-0 rounded bg-inset px-1.5 py-px text-[10px] text-ink-secondary">{t("model.default")}</span>
         )}
         {option.loaded && (
-          <span className="shrink-0 rounded bg-accent/10 px-1.5 py-px text-[10px] text-accent">Loaded</span>
+          <span className="shrink-0 rounded bg-accent/10 px-1.5 py-px text-[10px] text-accent">{t("model.loaded")}</span>
         )}
       </span>
       {current && <Check size={14} className="shrink-0 text-accent" />}
@@ -104,6 +106,7 @@ export function ModelPicker({
   contained?: boolean;
   label?: ReactNode;
 }) {
+  const { t } = useT();
   const { state, dispatch, refreshInstances } = useStore();
   const [open, setOpen] = useState(false);
   const [railId, setRailId] = useState<string | null>(null);
@@ -294,11 +297,11 @@ export function ModelPicker({
               return (
                 <>
                   {subscription.length > 0 && (
-                    <EngineGroupLabel className="px-0 pb-0.5 pt-0.5 text-center text-[9px]">Cloud</EngineGroupLabel>
+                    <EngineGroupLabel className="px-0 pb-0.5 pt-0.5 text-center text-[9px]">{t("common.cloud")}</EngineGroupLabel>
                   )}
                   {subscription.map(railButton)}
                   {local.length > 0 && (
-                    <EngineGroupLabel className="px-0 pb-0.5 pt-2 text-center text-[9px]">Local</EngineGroupLabel>
+                    <EngineGroupLabel className="px-0 pb-0.5 pt-2 text-center text-[9px]">{t("common.local")}</EngineGroupLabel>
                   )}
                   {local.map(railButton)}
                 </>
@@ -402,7 +405,7 @@ export function ModelPicker({
                       ) : (
                         <>
                           {pinned.length > 0 && (
-                            <EngineGroupLabel className="px-2 pb-1 pt-0.5">Loaded now</EngineGroupLabel>
+                            <EngineGroupLabel className="px-2 pb-1 pt-0.5">{t("model.loadedNow")}</EngineGroupLabel>
                           )}
                           {pinned.map(renderRow)}
                           {pinned.length > 0 && rest.length > 0 && (
@@ -411,7 +414,7 @@ export function ModelPicker({
                           {rest.map(renderRow)}
                           {custom.length === 0 && (
                             <div className="mx-1 rounded-xl border border-dashed border-hairline/50 px-3 py-5 text-center">
-                              <div className="text-[12.5px] font-medium text-ink">No local models found</div>
+                              <div className="text-[12.5px] font-medium text-ink">{t("model.noLocal")}</div>
                               <div className="mt-1 text-[11.5px] leading-relaxed text-ink-secondary">
                                 Start oMLX, Ollama, Unsloth, LM Studio, or EXO, then reopen this picker.
                               </div>
@@ -441,7 +444,7 @@ export function ModelPicker({
                     }}
                     className="flex w-full shrink-0 items-center justify-between gap-2 border-t border-hairline/40 px-4 py-3 text-left text-[12.5px] font-medium text-ink hover:bg-control/60 disabled:cursor-not-allowed disabled:text-ink-secondary/40 disabled:hover:bg-transparent"
                   >
-                    <span>Use a local model</span>
+                    <span>{t("model.useLocal")}</span>
                     <span className="flex items-center gap-2">
                       {custom.length > 0 && (
                         <span className="rounded-full bg-inset px-2 py-0.5 text-[10.5px] text-ink-secondary">
@@ -454,7 +457,7 @@ export function ModelPicker({
                 )}
               </>
             ) : (
-              <div className="px-4 py-5 text-[13px] text-ink-secondary">No model providers are available.</div>
+              <div className="px-4 py-5 text-[13px] text-ink-secondary">{t("model.noneAvailable")}</div>
             )}
           </div>
         </div>

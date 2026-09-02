@@ -23,6 +23,7 @@ import { groupComposerHint, roomRespondersForComposer } from "@/lib/group-routin
 import { PendingApprovalActions, PendingApprovalPanel, pendingApprovals } from "./PendingApproval";
 import { useDesktopCapabilities } from "./DesktopCapabilities";
 import { ReplyQuote } from "./ReplyQuote";
+import { useT } from "@/i18n";
 
 /** The active @mention query at the caret: the text between an `@` that
  * starts a word and the caret. null = no mention being typed. */
@@ -39,6 +40,7 @@ function mentionQueryAt(text: string, caret: number): { start: number; query: st
 type MentionChoice = { id: string; name: string; bot?: Bot };
 
 function PermissionModeSelector({ bot, onSetAuto }: { bot: Bot; onSetAuto: (auto: boolean) => void }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +63,7 @@ function PermissionModeSelector({ bot, onSetAuto }: { bot: Bot; onSetAuto: (auto
 
   const mode = bot.autoApprove ? "auto" : "ask";
   const Icon = mode === "auto" ? ShieldCheck : Hand;
-  const label = mode === "auto" ? "Approve for me" : "Ask for approval";
+  const label = mode === "auto" ? t("composer.auto") : t("composer.ask");
 
   return (
     <div className="relative flex items-center" ref={wrapperRef}>
@@ -79,11 +81,11 @@ function PermissionModeSelector({ bot, onSetAuto }: { bot: Bot; onSetAuto: (auto
       {open && (
         <div
           role="menu"
-          aria-label={`Permission mode for ${bot.name}`}
+          aria-label={t("composer.modeAria", { name: bot.name })}
           className="absolute bottom-full left-0 z-30 mb-2 w-80 overflow-hidden rounded-xl border border-hairline/40 bg-raised shadow-lg"
         >
           <div className="border-b border-hairline/20 px-4 py-3 text-[13px] font-medium text-ink-secondary">
-            How should {bot.name} actions be approved?
+            {t("composer.howApprove", { name: bot.name })}
           </div>
           <div className="flex flex-col py-1">
             <button
@@ -99,10 +101,10 @@ function PermissionModeSelector({ bot, onSetAuto }: { bot: Bot; onSetAuto: (auto
               <Hand size={16} className="mt-0.5 shrink-0 opacity-70" />
               <div className="flex w-full flex-col gap-0.5">
                 <div className="flex items-center justify-between text-[14px] text-ink">
-                  Ask for approval
+                  {t("composer.ask")}
                   {mode === "ask" && <Check size={14} />}
                 </div>
-                <div className="text-[13px] text-ink-secondary">Ask before actions that need your permission</div>
+                <div className="text-[13px] text-ink-secondary">{t("composer.askHint")}</div>
               </div>
             </button>
             <button
@@ -118,11 +120,11 @@ function PermissionModeSelector({ bot, onSetAuto }: { bot: Bot; onSetAuto: (auto
               <ShieldCheck size={16} className="mt-0.5 shrink-0 opacity-70" />
               <div className="flex w-full flex-col gap-0.5">
                 <div className="flex items-center justify-between text-[14px] text-ink">
-                  Approve for me
+                  {t("composer.auto")}
                   {mode === "auto" && <Check size={14} />}
                 </div>
                 <div className="text-[13px] text-ink-secondary">
-                  Keep going automatically; destructive and sensitive actions still ask
+                  {t("composer.autoHint")}
                 </div>
               </div>
             </button>

@@ -8,6 +8,7 @@ import { rankByName } from "@/lib/palette-rank";
 import { cn } from "@/lib/cn";
 import type { SearchHit } from "@/lib/search-hit";
 import { landOnSearchHit } from "@/lib/focus-message";
+import { useT } from "@/i18n";
 
 type PaletteEntry =
   | { kind: "bot"; bot: Bot }
@@ -15,6 +16,7 @@ type PaletteEntry =
   | { kind: "message"; hit: SearchHit };
 
 export function CommandPalette() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -161,7 +163,7 @@ export function CommandPalette() {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search bots, channels, messages…"
+            placeholder={t("commandPalette.placeholder")}
             className="w-full bg-transparent text-[14px] text-ink placeholder:text-ink-secondary focus:outline-none"
           />
           <kbd className="shrink-0 rounded-md border border-hairline/40 px-1.5 py-0.5 text-[11px] text-ink-secondary">

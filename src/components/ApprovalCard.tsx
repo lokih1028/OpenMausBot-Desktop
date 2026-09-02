@@ -7,6 +7,7 @@
 import { Check, ShieldCheck, X } from "lucide-react";
 import { type Bot, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
+import { useT, type Translate } from "@/i18n";
 
 interface ToolLabels {
   [tool: string]: string;
@@ -14,16 +15,16 @@ interface ToolLabels {
 
 /** The tool's own name is noise to a human: mcp__ogb__computer_batch is
  * "computer batch", Bash is "run a command". */
-function toolLabel(tool?: string): string {
-  if (!tool) return "an action";
+function toolLabel(tool: string | undefined, t: Translate): string {
+  if (!tool) return t("approval.anAction");
   const bare = tool.replace(/^mcp__[^_]+__/, "").replace(/_/g, " ");
   const nice: ToolLabels = {
-    Bash: "run a command",
-    Read: "read a file",
-    Write: "write a file",
-    Edit: "edit a file",
-    WebFetch: "fetch a web page",
-    WebSearch: "search the web",
+    Bash: t("approval.bash"),
+    Read: t("approval.read"),
+    Write: t("approval.write"),
+    Edit: t("approval.edit"),
+    WebFetch: t("approval.webFetch"),
+    WebSearch: t("approval.webSearch"),
   };
   return nice[tool] ?? bare;
 }
@@ -36,6 +37,7 @@ export function ApprovalCard({
   bot?: Bot;
   message: Message;
 }) {
+  const { t } = useT();
   const card = message.card;
   if (!card) return null;
   const settled = card.answered;
@@ -49,8 +51,8 @@ export function ApprovalCard({
     >
       <div className="flex items-baseline justify-between gap-3">
         <div className="text-[15px] font-semibold text-ink">
-          {bot ? `${bot.name} wants to ` : "Wants to "}
-          {toolLabel(card.tool)}
+          {bot ? t("approval.wantsTo", { name: bot.name }) : t("approval.wantsToAnon")}
+          {toolLabel(card.tool, t)}
         </div>
         {card.tool && <span className="shrink-0 font-mono text-[11px] text-ink-secondary">{card.tool}</span>}
       </div>
@@ -71,11 +73,11 @@ export function ApprovalCard({
       <div className="mt-3 flex items-center gap-1.5 text-[13px] text-ink-secondary">
         {settled === "allow" ? (
           <>
-            <Check size={14} className="text-success" /> Allowed
+            <Check size={14} className="text-success" /> {t("approval.allowed")}
           </>
         ) : settled ? (
           <>
-            <X size={14} /> Denied
+            <X size={14} /> {t("approval.denied")}
           </>
         ) : (
           <>

@@ -7,6 +7,7 @@ import { Check, Loader2, RefreshCw, Search, TriangleAlert, X } from "lucide-reac
 import { api, useStore } from "@/state/store";
 import { cn } from "@/lib/cn";
 import { readCachedInventory, writeCachedInventory } from "@/lib/connected-apps-cache";
+import { useT } from "@/i18n";
 
 interface ToolkitCard {
   slug: string;
@@ -191,6 +192,7 @@ function ServiceIcon({ card }: { card: ToolkitCard }) {
 }
 
 export function PluginsPanel() {
+  const { t } = useT();
   const { dispatch } = useStore();
   const dialogRef = useRef<HTMLDivElement>(null);
   const [cards, setCards] = useState<ToolkitCard[] | null>(null);
@@ -482,8 +484,8 @@ export function PluginsPanel() {
       >
         <header className="flex items-start justify-between gap-4 px-6 pb-3 pt-6 sm:px-8 sm:pt-7">
           <div>
-            <h2 id="connected-apps-title" className="text-[22px] font-semibold tracking-[-0.01em] text-ink">Connected apps</h2>
-            <p className="mt-1 text-[13px] text-ink-secondary">Connect the apps your bots can use.</p>
+            <h2 id="connected-apps-title" className="text-[22px] font-semibold tracking-[-0.01em] text-ink">{t("plugins.title")}</h2>
+            <p className="mt-1 text-[13px] text-ink-secondary">{t("plugins.subtitle")}</p>
           </div>
           <div className="flex items-center gap-1">
             <button

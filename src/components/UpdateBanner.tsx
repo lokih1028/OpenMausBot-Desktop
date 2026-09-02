@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ArrowDownToLine, Loader2, RefreshCw, Sparkles, X } from "lucide-react";
 import { useUpdaterState } from "@/lib/updater";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 // The one action button in the card. Disabled drops the accent fill for the
 // flat raised grey — the "I heard you" the click needs while the main process
@@ -17,16 +18,17 @@ const primaryAction =
 // every response header, stack trace. That is unreadable in a 300px popup,
 // so name the two cases that actually happen and clip anything else to its
 // first line.
-function friendlyError(message?: string): string {
-  if (!message) return "Something went wrong.";
+function friendlyError(message: string | undefined, t: (key: string) => string): string {
+  if (!message) return t("update.somethingWrong");
   if (/cannot find .*\.yml|404/i.test(message))
-    return "No update has been published for this platform yet.";
+    return t("update.noYml");
   if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|net::/i.test(message))
-    return "Couldn't reach the update server.";
+    return t("update.unreachable");
   return message.split("\n")[0].slice(0, 140);
 }
 
 export function UpdateBanner() {
+  const { t } = useT();
   const s = useUpdaterState();
   // dismissal is per status+version, so the popup returns for the next
   // update (and when an available one finishes downloading)
@@ -49,27 +51,27 @@ export function UpdateBanner() {
 
   const title =
     s.status === "available"
-      ? `OpenMausBot ${s.version} is available`
+      ? t("update.available", { version: s.version ?? "" })
       : s.status === "downloading"
-        ? `Downloading ${s.version ?? "update"}…`
+        ? t("update.downloading", { version: s.version ?? "update" })
         : s.status === "downloaded"
-          ? `${s.version} is ready`
+          ? t("update.ready", { version: s.version ?? "" })
           : installing
-            ? "Restarting to update…"
-            : "Update check failed";
+            ? t("update.restarting")
+            : t("update.failed");
   const subtitle =
     s.status === "available"
-      ? "A newer version is ready to download."
+      ? t("update.newerReady")
       : s.status === "downloading"
         ? // no percent yet means the transfer hasn't reported in — don't imply 0
           s.percent == null
-          ? "Starting download…"
-          : `${Math.round(s.percent)}%`
+          ? t("update.starting")
+          : t("update.percent", { percent: Math.round(s.percent) })
         : s.status === "downloaded"
-          ? "Restart to finish updating."
+          ? t("update.restartFinish")
           : installing
-            ? "OpenMausBot will reopen in a moment."
-            : friendlyError(s.message);
+            ? t("update.reopen")
+            : friendlyError(s.message, t);
 
   return (
     <div className="animate-panel-in fixed bottom-4 left-4 z-50 w-[300px] rounded-xl border border-hairline/40 bg-panel p-3.5 shadow-2xl shadow-black/50">

@@ -40,6 +40,7 @@ import {
   localComputerSelectable,
 } from "@/lib/local-computer";
 import { vpsComputerNeedsReplacement, type VpsComputerStatus } from "@/lib/vps-computer";
+import { useT } from "@/i18n";
 
 async function api(path: string, init?: RequestInit): Promise<any> {
   const res = await fetch(path, { headers: { "content-type": "application/json" }, ...init });
@@ -109,6 +110,7 @@ function nextRunLabel(at: number | null) {
 }
 
 export function ComputerPanel({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const { capabilities, ready: capabilitiesReady } = useDesktopCapabilities();
   const localAvailable = capabilities.localComputer.available;
@@ -749,7 +751,7 @@ export function ComputerPanel({ bot }: { bot: Bot }) {
             </button>
           </div>
         ) : (
-          <span className="text-[15px] font-semibold text-ink">Computer</span>
+          <span className="text-[15px] font-semibold text-ink">{t("computer.title")}</span>
         )}
         <button
           onClick={() => dispatch({ type: "toggleComputer", open: false })}
@@ -768,9 +770,9 @@ export function ComputerPanel({ bot }: { bot: Bot }) {
           {/* Screen preview */}
           <div className="mb-1.5 mt-2 flex items-center justify-between text-[13px] text-ink-secondary">
             <span>{bot.name}'s screen</span>
-            {phase === "local" && <span className="text-[11px]">this computer</span>}
-            {phase === "vm" && <span className="text-[11px]">Local VM</span>}
-            {cloudBackend === "vps" && (phase === "ready" || phase === "starting") && <span className="text-[11px]">self-hosted VPS</span>}
+            {phase === "local" && <span className="text-[11px]">{t("computer.thisComputer")}</span>}
+            {phase === "vm" && <span className="text-[11px]">{t("computer.localVm")}</span>}
+            {cloudBackend === "vps" && (phase === "ready" || phase === "starting") && <span className="text-[11px]">{t("computer.selfHostedVps")}</span>}
         </div>
         <div className="flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-xl bg-card">
           {frameSrc && previewOpensDesktop ? (
@@ -1040,7 +1042,7 @@ export function ComputerPanel({ bot }: { bot: Bot }) {
 
         {/* Computer source */}
           <div className="mt-4 rounded-xl bg-card p-4">
-            <div className="text-[15px] font-medium text-ink">Runs on</div>
+            <div className="text-[15px] font-medium text-ink">{t("computer.runsOn")}</div>
             <div className="mt-0.5 text-[13px] text-ink-secondary">
               {!bot.computer &&
                 (isLinux || !localSelectable

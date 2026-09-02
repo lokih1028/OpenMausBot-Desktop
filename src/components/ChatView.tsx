@@ -37,6 +37,7 @@ import {
   type Message,
 } from "@/state/store";
 import { EngineSetup } from "./EngineSetup";
+import { useT } from "@/i18n";
 import { BotAvatar, MausAvatar } from "./Avatar";
 import { stateForBot } from "@/lib/mascot";
 import { showWorkingDots } from "@/lib/turn-tail";
@@ -274,6 +275,7 @@ function BubbleEditor({
   onCancel: () => void;
   onSubmit: (text: string) => void;
 }) {
+  const { t } = useT();
   const [draft, setDraft] = useState(initial);
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -307,14 +309,14 @@ function BubbleEditor({
           onClick={onCancel}
           className="rounded-full px-3 py-1 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
         <button
           onClick={submit}
           disabled={!draft.trim()}
           className="rounded-full bg-accent px-3 py-1 text-[13px] font-medium text-white disabled:opacity-40"
         >
-          Send
+          {t("common.send")}
         </button>
       </div>
     </div>
@@ -344,6 +346,7 @@ function Bubble({
   replyTarget?: Message;
   onReply: () => void;
 }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const user = message.role === "user";
   const [expanded, setExpanded] = useState(false);
@@ -440,12 +443,12 @@ function Bubble({
             <div className="min-w-[300px] max-w-[520px]">
               <div className="flex items-center gap-2 border-b border-accent/15 bg-accent/[0.055] px-4 py-2.5 text-[11.5px] font-medium text-accent">
                 <Webhook size={13} />
-                <span>Webhook task</span>
+                <span>{t("chat.webhookTask")}</span>
               </div>
               <div className="px-4 py-3 whitespace-pre-wrap">{webhookView.task}</div>
               {webhookView.payload && (
                 <details className="border-t border-hairline/30 bg-inset/25 px-4 py-2.5 text-[11.5px] text-ink-secondary">
-                  <summary className="cursor-pointer select-none hover:text-ink">View event payload</summary>
+                  <summary className="cursor-pointer select-none hover:text-ink">{t("chat.viewPayload")}</summary>
                   <pre className="mt-2 max-h-48 overflow-auto rounded-lg border border-hairline/25 bg-black/25 p-3 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap text-ink-secondary">{webhookView.payload}</pre>
                 </details>
               )}
@@ -514,7 +517,7 @@ function Bubble({
       {user && message.queued && bot.busy && (
         <div className="mt-1 flex items-center gap-1 pr-1 text-[11px] text-ink-secondary/70">
           <Clock size={11} aria-hidden="true" />
-          <span>Queued — sends when this turn finishes</span>
+          <span>{t("chat.queued")}</span>
         </div>
       )}
       <ReactionChips threadId={bot.threadId} message={message} align={user ? "right" : "left"} />
@@ -815,6 +818,7 @@ function PinnedBanner({
 }
 
 export function ChatView({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -1022,8 +1026,8 @@ export function ChatView({ bot }: { bot: Bot }) {
           <button
             onClick={() => dispatch({ type: "toggleSettings", open: true })}
             className="flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-raised/50"
-            title="Open agent profile"
-            aria-label={`Open ${bot.name}'s profile`}
+            title={t("agent.openProfile")}
+            aria-label={t("agent.openProfileNamed", { name: bot.name })}
           >
             <BotAvatar
               bot={bot}
@@ -1043,7 +1047,7 @@ export function ChatView({ bot }: { bot: Bot }) {
           />
           {bot.chiefOfStaff && (
             <span className="flex items-center gap-1 rounded-full bg-accent/12 px-2 py-0.5 text-[11px] font-medium text-accent">
-              <Crown size={11} /> Chief of Staff
+              <Crown size={11} /> {t("sidebar.chiefOfStaff")}
             </span>
           )}
           {bot.busy && <Loader2 size={14} className="animate-spin text-ink-secondary" />}
@@ -1051,13 +1055,13 @@ export function ChatView({ bot }: { bot: Bot }) {
         <div className="flex shrink-0 items-center gap-2" style={noDrag}>
           <button
             onClick={() => setFindOpen((open) => !open)}
-            aria-label="Find in conversation"
+            aria-label={t("chat.find")}
             aria-pressed={findOpen}
             className={cn(
               "rounded-md p-1.5 hover:bg-raised",
               findOpen ? "text-accent" : "text-ink-secondary hover:text-ink",
             )}
-            title="Find in conversation (⌘F)"
+            title={t("chat.findShortcut")}
           >
             <Search size={18} />
           </button>
@@ -1068,10 +1072,10 @@ export function ChatView({ bot }: { bot: Bot }) {
                 "flex items-center gap-1.5 rounded-full border border-hairline/40 bg-raised/60 px-2.5 py-1 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink",
                 COMPACT_BUBBLE,
               )}
-              title="Stop this turn"
+              title={t("chat.stopTurn")}
             >
               <Square size={12} className="fill-current" />
-              <span className="@max-4xl/chathead:hidden">Stop</span>
+              <span className="@max-4xl/chathead:hidden">{t("common.stop")}</span>
             </button>
           )}
           <TaskPicker bot={bot} />
@@ -1085,13 +1089,13 @@ export function ChatView({ bot }: { bot: Bot }) {
               "rounded-md p-1.5 hover:bg-raised",
               state.computerOpen ? "text-accent" : "text-ink-secondary hover:text-ink",
             )}
-            title="Bot's computer"
+            title={t("chat.botsComputer")}
           >
             <Monitor size={18} />
           </button>
           <button
             onClick={() => dispatch({ type: "toggleInspector" })}
-            aria-label="Inspector"
+            aria-label={t("chat.inspector")}
             aria-pressed={state.inspectorOpen}
             className={cn(
               "rounded-md p-1.5 hover:bg-raised",

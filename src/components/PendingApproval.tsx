@@ -10,6 +10,7 @@
 import { memo } from "react";
 import { useStore, type Bot, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
+import { useT, type Translate } from "@/i18n";
 
 interface ApprovalLabels {
   [tool: string]: string;
@@ -39,16 +40,16 @@ export function pendingApprovals(messages: Message[]): Pending[] {
     }));
 }
 
-function label(tool: string): string {
+function label(tool: string, t: Translate): string {
   const nice: ApprovalLabels = {
-    Bash: "Command approval requested",
-    shell: "Command approval requested",
-    Read: "File-read approval requested",
-    Write: "File-change approval requested",
-    Edit: "File-change approval requested",
-    edit: "File-change approval requested",
+    Bash: t("approval.command"),
+    shell: t("approval.command"),
+    Read: t("approval.fileRead"),
+    Write: t("approval.fileChange"),
+    Edit: t("approval.fileChange"),
+    edit: t("approval.fileChange"),
   };
-  return nice[tool] ?? "Approval requested";
+  return nice[tool] ?? t("approval.generic");
 }
 
 export const PendingApprovalPanel = memo(function PendingApprovalPanel({
@@ -60,16 +61,17 @@ export const PendingApprovalPanel = memo(function PendingApprovalPanel({
   count: number;
   index: number;
 }) {
+  const { t } = useT();
   return (
     <div className="rounded-t-2xl border-b border-hairline/50 bg-control/40 px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-ink-secondary">Pending approval</span>
+        <span className="text-[11px] uppercase tracking-[0.18em] text-ink-secondary">{t("approval.pending")}</span>
         {count > 1 && (
           <span className="rounded-full bg-control px-1.5 py-0.5 text-[11px] tabular-nums text-ink-secondary">
-            {index + 1} of {count}
+            {t("approval.of", { index: index + 1, count })}
           </span>
         )}
-        <span className="text-[13px] text-ink">{label(pending.tool)}</span>
+        <span className="text-[13px] text-ink">{label(pending.tool, t)}</span>
         <span className="font-mono text-[11px] text-ink-secondary">{pending.tool}</span>
       </div>
       {/* never truncated — long commands wrap and scroll */}
@@ -93,6 +95,7 @@ export function PendingApprovalActions({
   bot?: Bot;
   onCancelTurn: () => void;
 }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const decide = (behavior: "allow" | "deny", always = false) =>
     dispatch({
@@ -108,28 +111,28 @@ export function PendingApprovalActions({
   return (
     <div className="flex flex-wrap items-center justify-end gap-2 px-2 py-2">
       <button onClick={onCancelTurn} className={cn(base, "text-ink-secondary hover:bg-control hover:text-ink")}>
-        Cancel turn
+        {t("approval.cancelTurn")}
       </button>
       <button
         onClick={() => decide("deny")}
         className={cn(base, "border border-danger/40 text-danger hover:bg-danger/10")}
       >
-        Deny
+        {t("approval.deny")}
       </button>
       {bot && pending.allowKey && (
         <button
           onClick={() => decide("allow", true)}
-          title={`Stop asking ${bot.name} about ${pending.allowKey}`}
+          title={t("approval.alwaysAllowTitle", { name: bot.name, key: pending.allowKey })}
           className={cn(base, "border border-hairline/50 text-ink hover:bg-control")}
         >
-          Always allow
+          {t("approval.alwaysAllow")}
         </button>
       )}
       <button
         onClick={() => decide("allow")}
         className={cn(base, "bg-accent font-medium text-white hover:brightness-110")}
       >
-        Allow once
+        {t("approval.allowOnce")}
       </button>
     </div>
   );

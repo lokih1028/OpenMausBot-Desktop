@@ -51,6 +51,7 @@ import {
   type SidebarDensity,
 } from "@/lib/sidebar-preferences";
 import { phoneSettingsAction, SidebarPhoneButton } from "./SidebarPhoneButton";
+import { useT, type Translate } from "@/i18n";
 
 /** "Milind Soni" → "MS", "milind" → "M", "you@x.dev" → "Y", unset → "?" */
 function profileInitials(profile?: { name?: string; email?: string }): string {
@@ -71,6 +72,7 @@ function profileInitials(profile?: { name?: string; email?: string }): string {
  * restart, with a brief "up to date" tick when a check finds nothing so a
  * click is never silent. The bottom-left popup handles the loud cases. */
 function UpdateButton() {
+  const { t } = useT();
   const s = useUpdaterState();
   const [checkedAt, setCheckedAt] = useState(0);
   const updater = window.ogb?.updater;
@@ -92,20 +94,20 @@ function UpdateButton() {
     pending || status === "checking" || status === "downloading" || status === "installing";
   const label =
     status === "available"
-      ? `Version ${s?.version ?? ""} available — download`
+      ? t("sidebar.versionAvailable", { version: s?.version ?? "" })
       : status === "downloading"
         ? s?.percent == null
-          ? "Starting download…"
-          : `Downloading… ${Math.round(s.percent)}%`
+          ? t("sidebar.startingDownload")
+          : t("sidebar.downloadingPercent", { percent: Math.round(s.percent) })
         : status === "downloaded"
-          ? `Version ${s?.version ?? ""} ready — restart to update`
+          ? t("sidebar.versionReady", { version: s?.version ?? "" })
           : status === "installing"
-            ? "Restarting to update…"
+            ? t("sidebar.restartingUpdate")
             : status === "checking"
-              ? "Checking for updates…"
+              ? t("sidebar.checkingUpdates")
               : upToDate
-                ? "You're up to date"
-                : "Check for updates";
+                ? t("sidebar.upToDate")
+                : t("sidebar.checkForUpdates");
 
   return (
     <button
@@ -142,16 +144,16 @@ function UpdateButton() {
   );
 }
 
-function preview(bot: Bot): string {
-  if (bot.activity === "waiting-on-you") return "Waiting for you…";
-  if (bot.busy) return "Working…";
+function preview(bot: Bot, t: Translate): string {
+  if (bot.activity === "waiting-on-you") return t("sidebar.waitingForYou");
+  if (bot.busy) return t("sidebar.working");
   // the visible branch's tail — bot.messages holds every fork, so its last
   // entry can belong to a version the user switched away from
   const last = visibleMessages(bot).at(-1);
   if (!last) return "";
   if (last.kind === "options" && last.card) return last.card.title;
   if (last.kind === "activity" && last.tool) return last.tool.name;
-  if (last.kind === "screen") return "Screen frame";
+  if (last.kind === "screen") return t("sidebar.screenFrame");
   return last.text ?? "";
 }
 
@@ -161,14 +163,15 @@ interface MenuState {
   y: number;
 }
 
-function groupPreview(group: Group, bots: Bot[]): string {
+function groupPreview(group: Group, bots: Bot[], t: Translate): string {
   if (group.busyBotId) {
-    return `${bots.find((b) => b.id === group.busyBotId)?.name ?? "A bot"} is working…`;
+    const name = bots.find((b) => b.id === group.busyBotId)?.name ?? t("sidebar.aBot");
+    return t("sidebar.botWorking", { name });
   }
   const last = group.messages.at(-1);
-  if (!last) return "No messages yet";
+  if (!last) return t("sidebar.noMessages");
   const text = last.kind === "activity" && last.tool ? last.tool.name : (last.text ?? "");
-  if (last.role === "user") return `You: ${text}`;
+  if (last.role === "user") return t("sidebar.youPrefix", { text });
   return last.from ? `${last.from.name}: ${text}` : text;
 }
 
@@ -212,6 +215,7 @@ function GroupListItem({
   density: SidebarDensity;
   onMenu: (menu: { groupId: string; x: number; y: number }) => void;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const selected = state.activeView === "chat" && state.selectedId === group.id;
   const members = group.memberIds
@@ -249,7 +253,7 @@ function GroupListItem({
           {selected && last && <span className="shrink-0 text-xs text-ink-secondary">{formatTime(last.at)}</span>}
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-[13px] text-ink-secondary">{groupPreview(group, state.bots)}</span>
+          <span className="truncate text-[13px] text-ink-secondary">{groupPreview(group, state.bots, t)}</span>
           {group.unread && <span className="size-2 shrink-0 rounded-full bg-accent" />}
         </div>
       </div>
@@ -269,6 +273,7 @@ function RoomContextMenu({
   onClose: () => void;
   onMoveToSection: (groupId: string) => void;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const group = state.groups.find((g) => g.id === menu.groupId);
   const [renaming, setRenaming] = useState(false);
@@ -327,8 +332,8 @@ function RoomContextMenu({
           <button
             type="button"
             onClick={saveRename}
-            aria-label="Save channel name"
-            title="Save"
+            aria-label={t("sidebar.saveChannelName")}
+            title={t("common.save")}
             className="flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-secondary hover:bg-raised hover:text-ink"
           >
             <Check size={15} />
@@ -336,8 +341,8 @@ function RoomContextMenu({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cancel channel rename"
-            title="Cancel"
+            aria-label={t("sidebar.cancelChannelRename")}
+            title={t("common.cancel")}
             className="flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-secondary hover:bg-raised hover:text-ink"
           >
             <X size={15} />
@@ -352,7 +357,7 @@ function RoomContextMenu({
           className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
         >
           <Pencil size={16} className="text-ink-secondary" />
-          Rename Channel
+          {t("sidebar.renameChannel")}
         </button>
       )}
       <button
@@ -363,7 +368,7 @@ function RoomContextMenu({
         className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
       >
         <FolderPlus size={16} className="text-ink-secondary" />
-        Move to context
+        {t("sidebar.moveToContext")}
       </button>
       <button
         onClick={() => {
@@ -373,7 +378,7 @@ function RoomContextMenu({
         className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
       >
         <ClipboardCopy size={16} className="text-ink-secondary" />
-        Copy conversation ID
+        {t("sidebar.copyConversationId")}
       </button>
       <button
         onClick={() => {
@@ -383,7 +388,7 @@ function RoomContextMenu({
         className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-danger hover:bg-raised/70"
       >
         <Trash2 size={16} />
-        Delete Channel
+        {t("sidebar.deleteChannel")}
       </button>
     </div>,
     document.body,
@@ -392,6 +397,7 @@ function RoomContextMenu({
 
 /** Pick members and an optional Work/Personal/project context, then create. */
 function NewRoomPanel({ onClose }: { onClose: () => void }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [name, setName] = useState("");
   const [section, setSection] = useState("");
@@ -431,7 +437,7 @@ function NewRoomPanel({ onClose }: { onClose: () => void }) {
             if (e.key === "Enter") create();
             if (e.key === "Escape") onClose();
           }}
-          placeholder="Channel name (for example, Website launch)"
+          placeholder={t("sidebar.channelNamePlaceholder")}
           className="mb-3 w-full rounded-lg bg-raised/70 px-3 py-2 text-[14px] text-ink placeholder:text-ink-secondary focus:outline-none"
         />
         <input
@@ -442,8 +448,8 @@ function NewRoomPanel({ onClose }: { onClose: () => void }) {
             if (e.key === "Enter") create();
             if (e.key === "Escape") onClose();
           }}
-          placeholder="Context (optional): Work, Personal, Client…"
-          aria-label="Channel context"
+          placeholder={t("sidebar.contextPlaceholder")}
+          aria-label={t("sidebar.contextAria")}
           className="mb-3 w-full rounded-lg bg-raised/70 px-3 py-2 text-[14px] text-ink placeholder:text-ink-secondary focus:outline-none"
         />
         <BotPickerList
@@ -494,6 +500,7 @@ function SectionPicker({
   /** "" clears — the server drops an empty section */
   onAssign: (section: string) => void;
 }) {
+  const { t } = useT();
   const { state } = useStore();
   const [name, setName] = useState("");
   const trimmed = name.trim();
@@ -569,8 +576,8 @@ function SectionPicker({
           maxLength={60}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="New context…"
-          aria-label="New context name"
+          placeholder={t("sidebar.newContextPlaceholder")}
+          aria-label={t("sidebar.newContextAria")}
           className="w-full rounded-lg bg-raised/70 px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none"
         />
         <button
@@ -611,6 +618,7 @@ function BotContextMenu({
   onArchive: (bot: Bot) => void;
   onMoveToSection: (botId: string) => void;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const bot = state.bots.find((b) => b.id === menu.botId);
 
@@ -635,9 +643,9 @@ function BotContextMenu({
   const visibleBotCount = state.bots.filter((candidate) => !candidate.hidden).length;
   const archiveBlocked = Boolean(bot.chiefOfStaff) || visibleBotCount <= 1;
   const archiveHint = bot.chiefOfStaff
-    ? "Choose another Chief of Staff first"
+    ? t("sidebar.archiveChiefFirst")
     : visibleBotCount <= 1
-      ? "Keep at least one active bot"
+      ? t("sidebar.archiveKeepOne")
       : undefined;
   // keep the menu on-screen near the click
   const top = Math.max(8, Math.min(menu.y, window.innerHeight - 380));
@@ -678,48 +686,48 @@ function BotContextMenu({
       {[
         item(
           bot.pinned ? <PinOff size={16} className="text-ink-secondary" /> : <Pin size={16} className="text-ink-secondary" />,
-          bot.pinned ? "Unpin" : "Pin",
+          bot.pinned ? t("sidebar.unpin") : t("sidebar.pin"),
           () => dispatch({ type: "updateBot", botId: bot.id, patch: { pinned: !bot.pinned } }),
         ),
         item(
           <Crown size={16} className={bot.chiefOfStaff ? "text-accent" : "text-ink-secondary"} />,
-          bot.chiefOfStaff ? "Remove Chief of Staff" : "Make Chief of Staff",
+          bot.chiefOfStaff ? t("sidebar.removeChief") : t("sidebar.makeChief"),
           () => dispatch({ type: "updateBot", botId: bot.id, patch: { chiefOfStaff: !bot.chiefOfStaff } }),
           {
             disabled: !bot.chiefOfStaff && !canCoordinate,
-            hint: !bot.chiefOfStaff && !canCoordinate ? "Choose a Claude or ACP engine first" : undefined,
+            hint: !bot.chiefOfStaff && !canCoordinate ? t("sidebar.chiefHint") : undefined,
           },
         ),
-        item(<FolderPlus size={16} className="text-ink-secondary" />, "Move to section", () => {
+        item(<FolderPlus size={16} className="text-ink-secondary" />, t("sidebar.moveToSection"), () => {
           onClose();
           onMoveToSection(bot.id);
         }),
-        item(<BellDot size={16} className="text-ink-secondary" />, "Mark as Unread", () =>
+        item(<BellDot size={16} className="text-ink-secondary" />, t("sidebar.markUnread"), () =>
           dispatch({ type: "markUnread", botId: bot.id }),
         ),
         divider("d1"),
-        item(<Pencil size={16} className="text-ink-secondary" />, "Edit Profile", () => {
+        item(<Pencil size={16} className="text-ink-secondary" />, t("sidebar.editProfile"), () => {
           dispatch({ type: "select", id: bot.id });
           dispatch({ type: "toggleSettings", open: true });
         }),
-        item(<Copy size={16} className="text-ink-secondary" />, "Duplicate", () =>
+        item(<Copy size={16} className="text-ink-secondary" />, t("sidebar.duplicate"), () =>
           dispatch({ type: "duplicateBot", botId: bot.id }),
         ),
         divider("d2"),
-        item(<ClipboardCopy size={16} className="text-ink-secondary" />, "Copy conversation ID", () => {
+        item(<ClipboardCopy size={16} className="text-ink-secondary" />, t("sidebar.copyConversationId"), () => {
           void navigator.clipboard?.writeText(bot.threadId);
         }),
         divider("d3"),
         item(
           <Archive size={16} className="text-ink-secondary" />,
-          "Archive",
+          t("sidebar.archive"),
           () => onArchive(bot),
           {
             disabled: archiveBlocked,
             hint: archiveHint,
           },
         ),
-        item(<Trash2 size={16} />, "Delete", () => dispatch({ type: "deleteBot", botId: bot.id }), {
+        item(<Trash2 size={16} />, t("common.delete"), () => dispatch({ type: "deleteBot", botId: bot.id }), {
           danger: true,
         }),
       ]}
@@ -740,6 +748,7 @@ function BotListItem({
   onArchive: (bot: Bot) => void;
   archiveDisabled: boolean;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [renaming, setRenaming] = useState(false);
   const selected = state.activeView === "chat" && state.selectedId === bot.id;
@@ -804,11 +813,11 @@ function BotListItem({
           <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] text-ink-secondary">
             {bot.chiefOfStaff && (
               <span className="flex shrink-0 items-center gap-1 text-[11.5px] font-medium text-accent">
-                <Crown size={11} /> Chief of Staff
+                <Crown size={11} /> {t("sidebar.chiefOfStaff")}
               </span>
             )}
-            {bot.chiefOfStaff && preview(bot) && <span className="shrink-0 text-ink-secondary/60">·</span>}
-            <span className="truncate">{preview(bot)}</span>
+            {bot.chiefOfStaff && preview(bot, t) && <span className="shrink-0 text-ink-secondary/60">·</span>}
+            <span className="truncate">{preview(bot, t)}</span>
           </span>
           {bot.unread && (
             <span className="size-2 shrink-0 rounded-full bg-accent" />
@@ -857,13 +866,13 @@ function BotListItem({
         type="button"
         disabled={archiveDisabled}
         onClick={() => onArchive(bot)}
-        aria-label={`Archive ${bot.name}`}
+        aria-label={t("sidebar.archiveBot", { name: bot.name })}
         title={
           bot.chiefOfStaff
-            ? "Choose another Chief of Staff first"
+            ? t("sidebar.archiveChiefFirst")
             : archiveDisabled
-              ? "Keep at least one active bot"
-              : `Archive ${bot.name}`
+              ? t("sidebar.archiveKeepOne")
+              : t("sidebar.archiveBot", { name: bot.name })
         }
         className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg bg-card/90 text-ink-secondary opacity-0 shadow-sm transition hover:bg-raised hover:text-ink focus:opacity-100 disabled:cursor-default disabled:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 max-md:opacity-100"
       >
@@ -1009,6 +1018,7 @@ function ArchivedBotsPanel({
 }
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const { capabilities } = useDesktopCapabilities();
   const importReturnRef = useRef<HTMLButtonElement>(null);
@@ -1225,7 +1235,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         !q ||
         b.name.toLowerCase().includes(q) ||
         (b.title ?? "").toLowerCase().includes(q) ||
-        preview(b).toLowerCase().includes(q),
+        preview(b, t).toLowerCase().includes(q),
     );
   const unsectionedChief = matchingBots.find((bot) => bot.chiefOfStaff && !bot.section);
   const sectionChiefs = matchingBots.filter((bot) => bot.chiefOfStaff && bot.section);
@@ -1257,7 +1267,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
   return (
     <aside
-      aria-label="Bots and navigation"
+      aria-label={t("sidebar.botsNav")}
       className={cn(
         "flex h-full shrink-0 flex-col border-r border-hairline/40 bg-panel transition-[width] duration-200",
         density === "icons" ? "w-[80px]" : density === "compact" ? "w-[272px]" : "w-[320px]",
@@ -1294,9 +1304,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             type="button"
             onClick={toggleCollapsed}
-            aria-label={density === "icons" ? "Expand sidebar" : "Collapse sidebar to avatars"}
+            aria-label={density === "icons" ? t("sidebar.expand") : t("sidebar.collapse")}
             className="flex size-10 items-center justify-center rounded-md text-ink-secondary hover:bg-raised hover:text-ink"
-            title={density === "icons" ? "Expand sidebar" : "Collapse to avatars"}
+            title={density === "icons" ? t("sidebar.expand") : t("sidebar.collapseShort")}
           >
             {density === "icons" ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
           </button>
@@ -1304,10 +1314,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <button
               type="button"
               onClick={() => setDensityOpen((value) => !value)}
-              aria-label="Choose sidebar density"
+              aria-label={t("sidebar.densityAria")}
               aria-expanded={densityOpen}
               className="flex size-10 items-center justify-center rounded-md text-ink-secondary hover:bg-raised hover:text-ink"
-              title="Sidebar density"
+              title={t("sidebar.density")}
             >
               <span aria-hidden="true" className="flex size-5 flex-col items-center justify-center gap-[3px]">
                 <span className="h-px w-3.5 rounded-full bg-current" />
@@ -1332,7 +1342,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                         density === option ? "text-accent" : "text-ink",
                       )}
                     >
-                      {option === "icons" ? "Avatars only" : option}
+                      {option === "icons" ? t("sidebar.avatarsOnly") : option === "compact" ? t("sidebar.compact") : t("sidebar.comfortable")}
                       {density === option && <Check size={14} />}
                     </button>
                   ))}
@@ -1343,9 +1353,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             ref={importReturnRef}
             onClick={() => setPlusOpen((o) => !o)}
-            aria-label="New or share"
+            aria-label={t("sidebar.newOrShare")}
             className="flex size-10 items-center justify-center rounded-md text-ink-secondary hover:bg-raised hover:text-ink"
-            title="New or share"
+            title={t("sidebar.newOrShare")}
           >
             <Plus size={20} strokeWidth={2} />
           </button>
@@ -1365,7 +1375,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                   className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
                 >
                   <BotIcon size={16} className="text-ink-secondary" />
-                  New Bot
+                  {t("sidebar.newBot")}
                 </button>
                 <button
                   onClick={() => {
@@ -1375,7 +1385,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                   className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
                 >
                   <Users size={16} className="text-ink-secondary" />
-                  New Channel
+                  {t("sidebar.newChannel")}
                 </button>
                 <button
                   onClick={() => {
@@ -1386,7 +1396,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                   className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
                 >
                   {exportingTeam ? <Loader2 size={16} className="animate-spin text-ink-secondary" /> : <ArrowDownToLine size={16} className="text-ink-secondary" />}
-                  {exportingTeam ? "Exporting…" : "Export all bots"}
+                  {exportingTeam ? t("sidebar.exporting") : t("sidebar.exportAll")}
                 </button>
                 <button
                   onClick={() => {
@@ -1396,7 +1406,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                   className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
                 >
                   <Library size={16} className="text-ink-secondary" />
-                  Teams
+                  {t("sidebar.teams")}
                 </button>
                 {archivedBots.length > 0 && (
                   <button
@@ -1407,7 +1417,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                     className="flex w-full items-center gap-3 px-3.5 py-2 text-left text-[14px] text-ink hover:bg-raised/70"
                   >
                     <Archive size={16} className="text-ink-secondary" />
-                    <span className="flex-1">Archived bots</span>
+                    <span className="flex-1">{t("sidebar.archivedBots")}</span>
                     <span className="text-[11.5px] text-ink-secondary">{archivedBots.length}</span>
                   </button>
                 )}
@@ -1425,8 +1435,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-            placeholder="Search"
-            aria-label="Search bots and messages"
+            placeholder={t("common.search")}
+            aria-label={t("sidebar.searchAria")}
             className="w-full bg-transparent text-[14px] text-ink placeholder:text-ink-secondary focus:outline-none"
           />
         </div>
@@ -1436,7 +1446,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       <div className="flex-1 overflow-y-auto px-2">
         <div className="flex flex-col gap-0.5">
           {!unsectionedChief && sectionChiefs.length === 0 && visibleBots.length === 0 && sectionedBots.length === 0 && visibleGroups.length === 0 && q && q.length < MIN_QUERY && (
-            <div className="px-3 py-6 text-center text-[13px] text-ink-secondary">Nothing matches “{query}”</div>
+            <div className="px-3 py-6 text-center text-[13px] text-ink-secondary">{t("sidebar.nothingMatches", { query })}</div>
           )}
           {unsectionedChief && (
             <div className="mb-1.5">
@@ -1449,11 +1459,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               />
             </div>
           )}
-          {unsectionedGroups.length > 0 && density !== "icons" && <SectionDivider name="Channels" />}
+          {unsectionedGroups.length > 0 && density !== "icons" && <SectionDivider name={t("sidebar.channels")} />}
           {unsectionedGroups.map((g) => (
             <GroupListItem key={g.id} group={g} density={density} onMenu={setRoomMenu} />
           ))}
-          {visibleBots.length > 0 && density !== "icons" && <SectionDivider name="Bots" />}
+          {visibleBots.length > 0 && density !== "icons" && <SectionDivider name={t("sidebar.bots")} />}
           {visibleBots.map((b) => (
             <BotListItem
               key={b.id}
@@ -1506,8 +1516,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       <div className={cn("pb-3 pt-2", density === "icons" ? "px-2" : "px-3")}>
         <button
           onClick={() => dispatch({ type: "showTeamMap" })}
-          aria-label={density === "icons" ? "Team map" : undefined}
-          title={density === "icons" ? "Team map" : undefined}
+          aria-label={density === "icons" ? t("sidebar.teamMap") : undefined}
+          title={density === "icons" ? t("sidebar.teamMap") : undefined}
           className={cn(
             "flex min-h-10 w-full items-center rounded-xl py-2 text-left transition-colors",
             density === "icons" ? "justify-center px-2" : "gap-3 px-3",
@@ -1515,13 +1525,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           )}
         >
           <Network size={20} className={state.activeView === "team-map" ? "text-accent" : "text-ink-secondary"} />
-          <span className={cn("flex-1 text-[14px]", density === "icons" && "hidden")}>Team map</span>
+          <span className={cn("flex-1 text-[14px]", density === "icons" && "hidden")}>{t("sidebar.teamMap")}</span>
         </button>
         {skillRecorderEnabled(state.config) && (
           <button
             onClick={() => dispatch({ type: "showSkillRecorder" })}
-            aria-label={density === "icons" ? "Teach a skill" : undefined}
-            title={density === "icons" ? "Teach a skill" : undefined}
+            aria-label={density === "icons" ? t("sidebar.teachSkill") : undefined}
+            title={density === "icons" ? t("sidebar.teachSkill") : undefined}
             className={cn(
               "flex min-h-10 w-full items-center rounded-xl py-2 text-left transition-colors",
               density === "icons" ? "justify-center px-2" : "gap-3 px-3",
@@ -1529,13 +1539,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             )}
           >
             <Sparkles size={20} className={state.activeView === "skill-recorder" ? "text-accent" : "text-ink-secondary"} />
-            <span className={cn("flex-1 text-[14px]", density === "icons" && "hidden")}>Teach a skill</span>
+            <span className={cn("flex-1 text-[14px]", density === "icons" && "hidden")}>{t("sidebar.teachSkill")}</span>
           </button>
         )}
         <button
           onClick={() => dispatch({ type: "showRoutines" })}
-          aria-label={density === "icons" ? "Tasks and routines" : undefined}
-          title={density === "icons" ? "Tasks and routines" : undefined}
+          aria-label={density === "icons" ? t("sidebar.tasksRoutines") : undefined}
+          title={density === "icons" ? t("sidebar.tasksRoutines") : undefined}
           className={cn(
             "flex min-h-10 w-full items-center rounded-xl py-2 text-left transition-colors",
             density === "icons" ? "justify-center px-2" : "gap-3 px-3",
@@ -1543,7 +1553,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           )}
         >
           <CalendarDays size={20} className={state.activeView === "routines" ? "text-accent" : "text-ink-secondary"} />
-          <span className={cn("flex-1 text-[14px]", density === "icons" && "hidden")}>Tasks &amp; routines</span>
+          <span className={cn("flex-1 text-[14px]", density === "icons" && "hidden")}>{t("sidebar.tasksRoutines")}</span>
           {state.routineRuns.some((run) => ["failed", "missed"].includes(run.status) && !run.seenAt) && (
             <span className="size-2 rounded-full bg-danger" />
           )}
@@ -1551,11 +1561,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         <button
           onClick={() => dispatch({ type: "togglePlugins", open: true })}
           className={cn("flex min-h-10 w-full items-center rounded-xl py-2 text-left hover:bg-raised/50", density === "icons" ? "justify-center px-2" : "gap-3 px-3")}
-          aria-label={density === "icons" ? "Connected apps" : undefined}
-          title={density === "icons" ? "Connected apps" : undefined}
+          aria-label={density === "icons" ? t("sidebar.connectedApps") : undefined}
+          title={density === "icons" ? t("sidebar.connectedApps") : undefined}
         >
           <Puzzle size={20} className="text-ink-secondary" />
-          <span className={cn("text-[14px] text-ink", density === "icons" && "hidden")}>Connected apps</span>
+          <span className={cn("text-[14px] text-ink", density === "icons" && "hidden")}>{t("sidebar.connectedApps")}</span>
         </button>
         {density === "icons" && (
           <SidebarPhoneButton
@@ -1567,12 +1577,12 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button
             onClick={() => dispatch({ type: "toggleAppSettings" })}
             className={cn("flex min-w-0 items-center rounded-xl py-2 text-left hover:bg-raised/50", density === "icons" ? "justify-center px-2" : "flex-1 gap-3 px-3")}
-            aria-label={density === "icons" ? "App settings" : undefined}
-            title={density === "icons" ? (state.config?.profile?.name?.trim() || "App settings") : undefined}
+            aria-label={density === "icons" ? t("sidebar.appSettings") : undefined}
+            title={density === "icons" ? (state.config?.profile?.name?.trim() || t("sidebar.appSettings")) : undefined}
           >
             <InitialsAvatar initials={profileInitials(state.config?.profile)} size={28} />
             <span className={cn("truncate text-[14px] text-ink", density === "icons" && "hidden")}>
-              {state.config?.profile?.name?.trim() || state.config?.profile?.email?.trim() || "You"}
+              {state.config?.profile?.name?.trim() || state.config?.profile?.email?.trim() || t("common.you")}
             </span>
           </button>
           {density !== "icons" && (
@@ -1585,7 +1595,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           {density !== "icons" && <button
             onClick={() => dispatch({ type: "toggleAppSettings" })}
             className="flex size-10 items-center justify-center rounded-md text-ink-secondary hover:bg-raised hover:text-ink"
-            title="App settings"
+            title={t("sidebar.appSettings")}
           >
             <Settings size={18} />
           </button>}

@@ -14,6 +14,7 @@ import { BotProfileAvatarCard } from "./BotProfileAvatarCard";
 import { LocalComputerAutoWarning } from "./LocalComputerAutoWarning";
 import { VoiceSettings } from "./VoiceSettings";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
+import { useT } from "@/i18n";
 
 function Field({
   label,
@@ -33,6 +34,7 @@ function Field({
 /** What this bot has spent across its tasks. Cost is captioned by how the
  * engine is billed — on a subscription the figure is an equivalent. */
 function BotUsageCard({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const usage = botUsage(bot);
   const instance = state.instances.find((i) => i.instanceId === bot.modelSelection.instanceId);
@@ -40,32 +42,32 @@ function BotUsageCard({ bot }: { bot: Bot }) {
   return (
     <div className="rounded-xl bg-card p-4">
       <div className="flex items-baseline justify-between">
-        <div className="text-[15px] font-medium text-ink">Usage</div>
+        <div className="text-[15px] font-medium text-ink">{t("agent.usage")}</div>
         <button
           onClick={() => dispatch({ type: "toggleAppSettings", open: true, section: "usage" })}
           className="text-[12px] text-ink-secondary hover:text-ink"
         >
-          All bots →
+          {t("agent.allBots")}
         </button>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-3 text-[13px]">
         <div>
-          <div className="text-[11.5px] uppercase tracking-wide text-ink-secondary">Turns</div>
+          <div className="text-[11.5px] uppercase tracking-wide text-ink-secondary">{t("agent.turns")}</div>
           <div className="mt-0.5 tabular-nums text-ink">{usage.turns}</div>
         </div>
         <div>
-          <div className="text-[11.5px] uppercase tracking-wide text-ink-secondary">Tokens</div>
+          <div className="text-[11.5px] uppercase tracking-wide text-ink-secondary">{t("agent.tokens")}</div>
           <div className="mt-0.5 tabular-nums text-ink" title={`${formatTokens(usage.input)} in · ${formatTokens(usage.output)} out`}>
             {formatTokens(usage.input + usage.output)}
           </div>
         </div>
         <div>
-          <div className="text-[11.5px] uppercase tracking-wide text-ink-secondary">Cost</div>
+          <div className="text-[11.5px] uppercase tracking-wide text-ink-secondary">{t("agent.cost")}</div>
           <div className="mt-0.5 tabular-nums text-ink">{hasFiniteCost(usage.costUsd) ? formatUsd(usage.costUsd) : "—"}</div>
         </div>
       </div>
       <div className="mt-2 text-[12px] text-ink-secondary">
-        {hasFiniteCost(usage.costUsd) ? `Cost ${costCaption(instance?.snapshot.billing)}.` : "This engine doesn't report a price; tokens are counted."}
+        {hasFiniteCost(usage.costUsd) ? t("agent.costCaption", { caption: costCaption(instance?.snapshot.billing) }) : t("agent.noPrice")}
       </div>
     </div>
   );
@@ -80,6 +82,7 @@ const inputCls =
  * PATCH is made directly rather than through updateBot: the server
  * validates the path and a rejected folder must not stick in local state. */
 function WorkingFolder({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { capabilities } = useDesktopCapabilities();
   const home = capabilities.host.homeDir;
   const [draft, setDraft] = useState<string | null>(null);
@@ -109,19 +112,19 @@ function WorkingFolder({ bot }: { bot: Bot }) {
 
   return (
     <div className="rounded-xl bg-card p-4">
-      <div className="text-[15px] font-medium text-ink">Working folder</div>
-      <div className="mt-0.5 text-[13px] text-ink-secondary">Where this bot runs its shell and file tools.</div>
+      <div className="text-[15px] font-medium text-ink">{t("agent.workingFolder")}</div>
+      <div className="mt-0.5 text-[13px] text-ink-secondary">{t("agent.workingFolderHint")}</div>
       {canPick ? (
         <div className="mt-3 flex items-center gap-2">
           <div className="min-w-0 flex-1 truncate rounded-lg border border-hairline/40 bg-inset px-3 py-2 font-mono text-[12.5px] text-ink" title={bot.cwd}>
-            {bot.cwd ? shortPath(bot.cwd, home) : <span className="text-ink-secondary">Private bot workspace</span>}
+            {bot.cwd ? shortPath(bot.cwd, home) : <span className="text-ink-secondary">{t("agent.privateWorkspace")}</span>}
           </div>
           <button onClick={() => void pick()} disabled={saving} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-control px-3 py-2 text-[13px] text-ink hover:bg-raised-hover disabled:opacity-50">
-            <FolderOpen size={14} /> Choose…
+            <FolderOpen size={14} /> {t("common.choose")}
           </button>
           {bot.cwd && (
             <button onClick={() => void save(null)} disabled={saving} className="shrink-0 rounded-lg px-2 py-2 text-[13px] text-ink-secondary hover:text-ink disabled:opacity-50">
-              Clear
+              {t("common.clear")}
             </button>
           )}
         </div>
@@ -136,19 +139,21 @@ function WorkingFolder({ bot }: { bot: Bot }) {
         >
           <input
             className={cn(inputCls, "font-mono text-[12.5px]")}
-            placeholder="Private bot workspace — or an absolute path"
+            placeholder={t("agent.pathPlaceholder")}
             value={draft ?? bot.cwd ?? ""}
             onChange={(e) => setDraft(e.target.value)}
           />
           <button type="submit" disabled={saving || draft === null} className="shrink-0 rounded-lg bg-control px-3 py-2 text-[13px] text-ink hover:bg-raised-hover disabled:opacity-50">
-            Save
+            {t("common.save")}
           </button>
         </form>
       )}
       {error && <div className="mt-2 text-[12px] text-danger">{error}</div>}
       {pinnedElsewhere && (
         <div className="mt-2 text-[12px] text-ink-secondary">
-          New tasks start here. This task is pinned to {pinned ? <span className="font-mono">{shortPath(pinned, home)}</span> : "the home folder"} — start a new task to use the new folder.
+          {pinned
+            ? t("agent.pinnedTask", { path: shortPath(pinned, home) })
+            : t("agent.pinnedHome")}
         </div>
       )}
     </div>
@@ -167,6 +172,7 @@ const formatBytes = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${Math.ro
  * every bot and most visits never look at memory — and an expand also
  * re-reads, so notes the bot wrote mid-session show up on the next open. */
 function MemoryCard({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -234,15 +240,15 @@ function MemoryCard({ bot }: { bot: Bot }) {
         }}
       >
         <div>
-          <div className="text-[15px] font-medium text-ink">Memory</div>
+          <div className="text-[15px] font-medium text-ink">{t("agent.memory")}</div>
           <div className="mt-0.5 text-[13px] text-ink-secondary">
-            Notes this bot keeps between tasks — plain files you can edit.
+            {t("agent.memoryHint")}
           </div>
         </div>
         <ChevronDown size={16} className={cn("shrink-0 text-ink-secondary transition-transform", open && "rotate-180")} />
       </button>
 
-      {open && loading && <div className="mt-3 text-[13px] text-ink-secondary">Loading…</div>}
+      {open && loading && <div className="mt-3 text-[13px] text-ink-secondary">{t("common.loading")}</div>}
 
       {open && !loading && topic && (
         <div className="mt-3">
@@ -252,7 +258,7 @@ function MemoryCard({ bot }: { bot: Bot }) {
               onClick={() => setTopic(null)}
               className="shrink-0 rounded-md px-2 py-1 text-[13px] text-ink-secondary hover:bg-control hover:text-ink"
             >
-              Back
+              {t("common.back")}
             </button>
           </div>
           <pre className="mt-2 max-h-[240px] overflow-auto whitespace-pre-wrap rounded-lg border border-hairline/40 bg-inset p-3 font-mono text-[12.5px] leading-relaxed text-ink">
@@ -266,8 +272,8 @@ function MemoryCard({ bot }: { bot: Bot }) {
           <textarea
             className={cn(inputCls, "min-h-[160px] resize-y font-mono text-[12.5px] leading-relaxed")}
             value={text}
-            placeholder="Nothing remembered yet. The bot writes durable notes here — or add your own."
-            aria-label="Bot memory"
+            placeholder={t("agent.memoryPlaceholder")}
+            aria-label={t("agent.memoryAria")}
             onChange={(e) => {
               setText(e.target.value);
               setDirty(true);
@@ -279,18 +285,18 @@ function MemoryCard({ bot }: { bot: Bot }) {
               disabled={saving || !dirty}
               className="rounded-lg bg-control px-3 py-1.5 text-[13px] text-ink hover:bg-raised-hover disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
             {truncated && (
               <span className="text-[11.5px] text-ink-secondary">
-                Over the budget — only the top of this file loads each turn.
+                {t("agent.memoryBudget")}
               </span>
             )}
           </div>
           {topics.length > 0 && (
             <div className="mt-3">
               <div className="mb-1.5 text-[12px] font-medium uppercase tracking-[0.08em] text-ink-secondary">
-                Topic files
+                {t("agent.topicFiles")}
               </div>
               <div className="overflow-hidden rounded-lg border border-hairline/40">
                 {topics.map((entry) => (
@@ -315,6 +321,7 @@ function MemoryCard({ bot }: { bot: Bot }) {
 }
 
 export function SettingsPanel({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const { capabilities } = useDesktopCapabilities();
   const providerSupportsLocal = instanceSupportsLocalComputer(state.instances, bot);
@@ -354,7 +361,7 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
   const canUseVps = engine?.capabilities?.computerMcp === true && engine.driverKind !== "boxAgent";
   const connectedAppsConfigured = state.config?.composio?.configured === true;
   const connectedAppsEnabled = bot.composio !== false;
-  const sectionName = bot.section?.trim() || "General";
+  const sectionName = bot.section?.trim() || t("agent.generalSection");
   const currentChief = state.bots.find(
     (candidate) =>
       candidate.chiefOfStaff &&
@@ -368,17 +375,17 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
       <div className="flex items-center justify-between px-4 py-3">
         <button
           onClick={() => dispatch({ type: "toggleSettings", open: false })}
-          aria-label="Collapse agent profile"
-          title="Collapse agent profile"
+          aria-label={t("agent.collapse")}
+          title={t("agent.collapse")}
           className="flex size-10 items-center justify-center rounded-md text-ink-secondary hover:bg-control hover:text-ink"
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="text-[15px] font-semibold text-ink">Agent profile</span>
+        <span className="text-[15px] font-semibold text-ink">{t("agent.profile")}</span>
         <button
           onClick={() => dispatch({ type: "toggleSettings", open: false })}
-          aria-label="Close agent profile"
-          title="Close agent profile"
+          aria-label={t("agent.close")}
+          title={t("agent.close")}
           className="flex size-10 items-center justify-center rounded-md text-ink-secondary hover:bg-control hover:text-ink"
         >
           <X size={18} />
@@ -394,7 +401,7 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
             onPatch={patch}
           />
 
-          <Field label="Name">
+          <Field label={t("agent.name")}>
             <input
               className={inputCls}
               maxLength={BOT_PROFILE_LIMITS.name}
@@ -402,20 +409,20 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
               onChange={(e) => patch({ name: e.target.value })}
             />
           </Field>
-          <Field label="Title">
+          <Field label={t("agent.title")}>
             <input
               className={inputCls}
               maxLength={BOT_PROFILE_LIMITS.title}
-              placeholder="Describe what your agent does"
+              placeholder={t("agent.titlePlaceholder")}
               value={bot.title}
               onChange={(e) => patch({ title: e.target.value })}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t("agent.description")}>
             <textarea
               className={cn(inputCls, "min-h-[96px] resize-none")}
               maxLength={BOT_PROFILE_LIMITS.description}
-              placeholder="What this agent is for"
+              placeholder={t("agent.descriptionPlaceholder")}
               value={bot.description}
               onChange={(e) => patch({ description: e.target.value })}
             />
@@ -433,16 +440,16 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
                 <Crown size={17} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-medium text-ink">Chief of Staff</div>
-                <div className="text-[11.5px] text-ink-secondary">One for {sectionName}</div>
+                <div className="text-[15px] font-medium text-ink">{t("agent.chiefTitle")}</div>
+                <div className="text-[11.5px] text-ink-secondary">{t("agent.oneFor", { section: sectionName })}</div>
               </div>
               <button
                 role="switch"
                 aria-checked={Boolean(bot.chiefOfStaff)}
-                aria-label="Chief of Staff"
+                aria-label={t("agent.chiefTitle")}
                 disabled={!bot.chiefOfStaff && !canCoordinate}
                 onClick={() => patch({ chiefOfStaff: !bot.chiefOfStaff })}
-                title={!bot.chiefOfStaff && !canCoordinate ? "This engine cannot contact other bots" : undefined}
+                title={!bot.chiefOfStaff && !canCoordinate ? t("agent.engineCannotContact") : undefined}
                 className={cn(
                   "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                   bot.chiefOfStaff ? "bg-accent" : "bg-control",
@@ -458,35 +465,35 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
             </div>
             <div className="mt-3 text-[13px] leading-relaxed text-ink-secondary">
               {bot.chiefOfStaff && !canCoordinate
-                ? "This bot still holds the role, but its current engine cannot contact teammates. Choose a Claude or ACP engine to restore coordination."
+                ? t("agent.chiefStuckEngine")
                 : bot.chiefOfStaff
-                  ? `This is the primary contact for ${sectionName}. It can create and coordinate specialists in this section, then combine their work into one answer.`
+                  ? t("agent.chiefActive", { section: sectionName })
                 : !canCoordinate
-                  ? "Choose a Claude or ACP engine to let this bot coordinate teammates."
+                  ? t("agent.chiefNeedEngine")
                   : currentChief
-                    ? `Make this bot the ${sectionName} Chief and hand the role over from ${currentChief.name}.`
-                    : `Make this bot the primary contact for the ${sectionName} section.`}
+                    ? t("agent.chiefHandover", { section: sectionName, chief: currentChief.name })
+                    : t("agent.chiefMake", { section: sectionName })}
             </div>
           </div>
 
           <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4">
             <div>
               <div className="text-[15px] font-medium text-ink">
-                Ask me before contacting other bots
+                {t("agent.askBeforeContact")}
               </div>
               <div className="mt-0.5 text-[13px] text-ink-secondary">
                 {bot.approvePeerComms
-                  ? "This bot will stop and ask before it reaches out to another bot."
-                  : "Let this bot talk to teammates on its own, without a confirmation step."}
+                  ? t("agent.askBeforeOn")
+                  : t("agent.askBeforeOff")}
               </div>
             </div>
             <button
               role="switch"
               aria-checked={Boolean(bot.approvePeerComms)}
-              aria-label="Ask me before contacting other bots"
+              aria-label={t("agent.askBeforeContact")}
               disabled={!bot.approvePeerComms && !canCoordinate}
               onClick={() => patch({ approvePeerComms: !bot.approvePeerComms })}
-              title={!bot.approvePeerComms && !canCoordinate ? "This engine cannot contact other bots" : undefined}
+              title={!bot.approvePeerComms && !canCoordinate ? t("agent.engineCannotContact") : undefined}
               className={cn(
                 "relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                 bot.approvePeerComms ? "bg-accent" : "bg-control",
@@ -503,30 +510,30 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
 
           <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4">
             <div>
-              <div className="text-[15px] font-medium text-ink">Connected apps</div>
+              <div className="text-[15px] font-medium text-ink">{t("agent.connectedApps")}</div>
               <div className="mt-0.5 text-[13px] text-ink-secondary">
                 {!connectedAppsConfigured
-                  ? "Connect apps in App Settings before giving this bot access."
+                  ? t("agent.appsNeedSettings")
                   : !canUseConnectedApps
-                    ? "This bot's current engine cannot use connected apps."
+                    ? t("agent.appsEngineNo")
                     : connectedAppsEnabled
-                      ? "Let this bot use your connected Gmail, Calendar, Slack, and other apps."
-                      : "Keep your connected apps unavailable to this bot."}
+                      ? t("agent.appsOn")
+                      : t("agent.appsOff")}
               </div>
             </div>
             <button
               role="switch"
               aria-checked={connectedAppsEnabled}
-              aria-label="Allow this bot to use connected apps"
+              aria-label={t("agent.appsAria")}
               disabled={
                 !connectedAppsEnabled && (!connectedAppsConfigured || !canUseConnectedApps)
               }
               onClick={() => patch({ composio: !connectedAppsEnabled })}
               title={
                 !connectedAppsEnabled && !connectedAppsConfigured
-                  ? "Connect apps in App Settings first"
+                  ? t("agent.appsConnectFirst")
                   : !connectedAppsEnabled && !canUseConnectedApps
-                    ? "This engine cannot use connected apps"
+                    ? t("agent.appsEngineCannot")
                     : undefined
               }
               className={cn(
@@ -549,9 +556,9 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
               contained
               label={
                 <div>
-                  <div className="text-[15px] font-medium text-ink">Model</div>
+                  <div className="text-[15px] font-medium text-ink">{t("agent.model")}</div>
                   <div className="mt-0.5 text-[13px] text-ink-secondary">
-                    Which provider and model this bot runs on
+                    {t("agent.modelHint")}
                   </div>
                 </div>
               }
@@ -560,14 +567,14 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
 
           {!!engine?.capabilities?.effortLevels?.length && (
             <div className="rounded-xl bg-card p-4">
-              <div className="text-[15px] font-medium text-ink">Effort</div>
+              <div className="text-[15px] font-medium text-ink">{t("agent.effort")}</div>
               {/* Says what the app does, not what the engine ends up at:
                   Codex applies a level to the whole thread and has no way to
                   take one back, so "currently: engine default" was a promise
                   we could not keep for a thread that had already been sent
                   one. Sending nothing is true on every engine. */}
               <div className="mt-0.5 text-[13px] text-ink-secondary">
-                How hard this bot thinks{bot.modelSelection.effort ? "" : " (Default: no level is sent)"}
+                {bot.modelSelection.effort ? t("agent.effortHint") : t("agent.effortDefaultHint")}
               </div>
               <div className="mt-3 flex overflow-hidden rounded-lg border border-hairline/40">
                 {([undefined, ...engine.capabilities.effortLevels] as const).map((level, i) => (
@@ -584,7 +591,7 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
                     )}
                   >
                     {/* the others capitalize cleanly; "xhigh" would read "Xhigh" */}
-                    {level === "xhigh" ? "X-High" : (level ?? "Default")}
+                    {level === "xhigh" ? "X-High" : (level ?? t("common.default"))}
                   </button>
                 ))}
               </div>
@@ -592,16 +599,16 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
           )}
 
           <div className="rounded-xl bg-card p-4">
-            <div className="text-[15px] font-medium text-ink">Computer</div>
+            <div className="text-[15px] font-medium text-ink">{t("agent.computer")}</div>
             <div className="mt-0.5 text-[13px] text-ink-secondary">
-              Where this bot's computer runs{bot.computer ? "" : " (currently: auto)"}
+              {bot.computer ? t("agent.computerHint") : t("agent.computerAutoHint")}
             </div>
             <div className="mt-3 flex overflow-hidden rounded-lg border border-hairline/40">
               {([
-                ["cloud", "Cloud"],
-                ["vm", "Local VM"],
-                ["local", "This computer"],
-                ["off", "Off"],
+                ["cloud", t("agent.computerCloud")],
+                ["vm", t("agent.computerVm")],
+                ["local", t("agent.computerLocal")],
+                ["off", t("agent.computerOff")],
               ] as const).map(([mode, label], i) => (
                 <button
                   key={mode}
@@ -635,15 +642,15 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
                 {!bot.computer && bot.cloudBackend === "vps" && (
                   <div className="mt-3 flex items-center justify-between gap-4 rounded-lg bg-inset px-3 py-2.5">
                     <div className="min-w-0">
-                      <div className="text-[13px] text-ink">Start VPS automatically</div>
+                      <div className="text-[13px] text-ink">{t("agent.startVps")}</div>
                       <div className="mt-0.5 text-[11.5px] text-ink-secondary">
-                        Allow Auto to create or wake this bot's managed container when needed.
+                        {t("agent.startVpsHint")}
                       </div>
                     </div>
                     <button
                       role="switch"
                       aria-checked={Boolean(bot.autoStartVps)}
-                      aria-label="Start VPS automatically"
+                      aria-label={t("agent.startVps")}
                       onClick={() => patch({ autoStartVps: !bot.autoStartVps })}
                       className={cn(
                         "relative h-6 w-11 shrink-0 rounded-full transition-colors",
@@ -671,21 +678,21 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
 
           <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4">
             <div>
-              <div className="text-[15px] font-medium text-ink">Auto mode</div>
+              <div className="text-[15px] font-medium text-ink">{t("agent.autoMode")}</div>
               <div className="mt-0.5 text-[13px] text-ink-secondary">
                 {bot.computer === "local"
                   ? bot.autoApprove
-                    ? "Keeps going on this computer — you'll still be asked about anything destructive, and about questions it asks you."
-                    : "Approve each action on this computer yourself. Turn on to let this bot keep working without stopping to ask."
+                    ? t("agent.autoLocalOn")
+                    : t("agent.autoLocalOff")
                   : bot.autoApprove
-                  ? "Keeps going on its own — you'll still be asked about anything destructive, and about questions it asks you."
-                  : "Approve each action yourself. Turn on to let this bot keep working without stopping to ask."}
+                  ? t("agent.autoOn")
+                  : t("agent.autoOff")}
               </div>
             </div>
             <button
               role="switch"
               aria-checked={Boolean(bot.autoApprove)}
-              aria-label="Auto mode"
+              aria-label={t("agent.autoMode")}
               onClick={() => {
                 if (!bot.autoApprove && bot.computer === "local") setLocalAutoWarning("auto");
                 else patch({ autoApprove: !bot.autoApprove });
@@ -709,16 +716,16 @@ export function SettingsPanel({ bot }: { bot: Bot }) {
           <div className="flex items-center justify-between gap-4 rounded-xl bg-card p-4">
             <div>
               <div className="text-[15px] font-medium text-ink">
-                Notifications
+                {t("agent.notifications")}
               </div>
               <div className="mt-0.5 text-[13px] text-ink-secondary">
-                Get notified when this agent finishes or needs input
+                {t("agent.notificationsHint")}
               </div>
             </div>
             <button
               role="switch"
               aria-checked={bot.notifications}
-              aria-label="Agent notifications"
+              aria-label={t("agent.notificationsAria")}
               onClick={() => {
                 const enabled = !bot.notifications;
                 if (enabled) void requestNotificationPermission();

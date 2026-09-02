@@ -2,9 +2,9 @@
 // Per-bot settings (persona, model, computer) stay in SettingsPanel — this
 // is the stuff shared by every bot: who you are, your keys, and the
 // machine your bots can borrow.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Coins, KeyRound, Monitor, Search, Smartphone, Terminal, User, X } from "lucide-react";
-import { api, useStore, type AppSettingsSection, type ConfigStatus } from "@/state/store";
+import { api, useStore, type ConfigStatus } from "@/state/store";
 import { analyticsEnabled, setAnalyticsEnabled } from "@/lib/analytics";
 import { skillRecorderEnabled } from "@/lib/feature-flags";
 import { ApiKeyRow, VpsConnection } from "./ApiKeys";
@@ -18,28 +18,28 @@ import { SkinPicker } from "./SkinPicker";
 import { RoomTurnTimeoutSettings } from "./RoomTurnTimeoutSettings";
 import { TranscriptionSettings } from "./TranscriptionSettings";
 import { cn } from "@/lib/cn";
+import { useT, type Locale } from "@/i18n";
 
-const SECTIONS: Array<{
-  id: AppSettingsSection;
-  label: string;
-  icon: typeof User;
-  keywords: string[];
-}> = [
-  { id: "general", label: "General", icon: User, keywords: ["profile", "name", "email", "skin", "theme", "appearance", "analytics", "updates"] },
-  { id: "connections", label: "Connections", icon: KeyRound, keywords: ["keys", "api", "composio", "box", "xai", "vps"] },
-  { id: "engines", label: "Engines", icon: Terminal, keywords: ["models", "claude", "grok", "providers", "cli"] },
-  { id: "companion", label: "Phone", icon: Smartphone, keywords: ["companion", "phone", "pair", "mobile"] },
-  { id: "computer", label: "Local VM", icon: Monitor, keywords: ["vm", "virtual", "desktop"] },
-  { id: "usage", label: "Usage", icon: Coins, keywords: ["tokens", "cost", "billing"] },
-];
+function useSettingsSections() {
+  const { t, locale } = useT();
+  return useMemo(() => [
+    { id: "general" as const, label: t("settings.nav.general"), icon: User, keywords: ["profile", "name", "email", "skin", "theme", "appearance", "analytics", "updates", "language", "语言", "通用", "资料"] },
+    { id: "connections" as const, label: t("settings.nav.connections"), icon: KeyRound, keywords: ["keys", "api", "composio", "box", "xai", "vps", "连接"] },
+    { id: "engines" as const, label: t("settings.nav.engines"), icon: Terminal, keywords: ["models", "claude", "grok", "providers", "cli", "引擎"] },
+    { id: "companion" as const, label: t("settings.nav.companion"), icon: Smartphone, keywords: ["companion", "phone", "pair", "mobile", "手机"] },
+    { id: "computer" as const, label: t("settings.nav.computer"), icon: Monitor, keywords: ["vm", "virtual", "desktop", "虚拟机"] },
+    { id: "usage" as const, label: t("settings.nav.usage"), icon: Coins, keywords: ["tokens", "cost", "billing", "用量"] },
+  ], [t, locale]);
+}
 
-function sectionMatches(section: (typeof SECTIONS)[number], query: string): boolean {
+function sectionMatches(section: { label: string; keywords: string[] }, query: string): boolean {
   if (!query) return true;
   return [section.label, ...section.keywords].some((part) => part.toLowerCase().includes(query));
 }
 
 /** Name + email, persisted to /api/config {profile} on blur. */
 function ProfileFields() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [name, setName] = useState(state.config?.profile?.name ?? "");
   const [email, setEmail] = useState(state.config?.profile?.email ?? "");
@@ -63,7 +63,7 @@ function ProfileFields() {
     "w-full rounded-lg border border-hairline/40 bg-inset px-3 py-2 text-[14px] text-ink placeholder:text-ink-secondary focus:border-hairline focus:outline-none";
   return (
     <div className="flex flex-col gap-3">
-      <input value={name} onChange={(e) => setName(e.target.value)} onBlur={save} placeholder="Your name" className={inputClass} />
+      <input value={name} onChange={(e) => setName(e.target.value)} onBlur={save} placeholder={t("settings.profile.namePlaceholder")} className={inputClass} />
       <input
         type="email"
         value={email}
@@ -77,23 +77,24 @@ function ProfileFields() {
 }
 
 function UpdatesRow() {
+  const { t } = useT();
   const s = useUpdaterState();
   if (!window.ogb?.updater) return null;
   const updater = window.ogb.updater;
   const label =
     s?.status === "checking"
-      ? "Checking…"
+      ? t("settings.updates.checking")
       : s?.status === "available"
-        ? `${s.version} available`
+        ? t("settings.updates.available", { version: s.version ?? "" })
         : s?.status === "downloading"
-          ? `Downloading ${Math.round(s.percent ?? 0)}%`
+          ? t("settings.updates.downloading", { percent: Math.round(s.percent ?? 0) })
           : s?.status === "downloaded"
-            ? `${s.version} ready — restart to apply`
+            ? t("settings.updates.ready", { version: s.version ?? "" })
             : s?.status === "error"
-              ? `Check failed: ${s.message ?? "unknown error"}`
-              : "You're on the latest version we know of.";
+              ? t("settings.updates.failed", { message: s.message ?? "unknown error" })
+              : t("settings.updates.latest");
   return (
-    <Card title="Updates" subtitle={label}>
+    <Card title={t("settings.updates.title")} subtitle={label}>
       <button
         onClick={() => {
           if (s?.status === "available") return void updater.download();
@@ -104,10 +105,10 @@ function UpdatesRow() {
         className="rounded-lg border border-hairline/40 px-3 py-1.5 text-[13px] text-ink hover:bg-control disabled:opacity-40"
       >
         {s?.status === "available"
-          ? "Download"
+          ? t("common.download")
           : s?.status === "downloaded"
-            ? "Restart and install"
-            : "Check for updates"}
+            ? t("common.restartAndInstall")
+            : t("settings.updates.check")}
       </button>
     </Card>
   );
@@ -118,16 +119,17 @@ function UpdatesRow() {
  * worst, and the worst — conversation text — is exactly what this never
  * sends (autocapture is off; see lib/analytics.ts). */
 function AnalyticsRow() {
+  const { t } = useT();
   const [on, setOn] = useState(analyticsEnabled);
   return (
     <Card
-      title="Usage analytics"
-      subtitle="Anonymous product events — app opened, which features get used. Never conversations, prompts, file contents, or bot output. Your email is only attached if you shared it during setup."
+      title={t("settings.analytics.title")}
+      subtitle={t("settings.analytics.subtitle")}
     >
       <button
         role="switch"
         aria-checked={on}
-        aria-label="Send usage analytics"
+        aria-label={t("settings.analytics.aria")}
         onClick={() => {
           const next = !on;
           setAnalyticsEnabled(next);
@@ -142,6 +144,7 @@ function AnalyticsRow() {
 }
 
 function ExperimentalFeaturesRow() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const enabled = skillRecorderEnabled(state.config);
   const [saving, setSaving] = useState(false);
@@ -158,7 +161,7 @@ function ExperimentalFeaturesRow() {
       });
       dispatch({ type: "configStatus", config });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the experimental feature setting.");
+      setError(cause instanceof Error ? cause.message : t("settings.experimental.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -166,20 +169,20 @@ function ExperimentalFeaturesRow() {
 
   return (
     <Card
-      title="Experimental features"
-      subtitle="Early features may change while we test them. They stay off unless you enable them."
+      title={t("settings.experimental.title")}
+      subtitle={t("settings.experimental.subtitle")}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">Teach a skill</div>
+          <div className="text-[14px] font-medium text-ink">{t("settings.experimental.teachSkill")}</div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">
-            Show the workflow recorder in the sidebar.
+            {t("settings.experimental.teachSkillHint")}
           </div>
         </div>
         <button
           role="switch"
           aria-checked={enabled}
-          aria-label="Show Teach a skill"
+          aria-label={t("settings.experimental.teachSkillAria")}
           disabled={saving}
           onClick={() => void toggle()}
           className={`${cnSwitch(enabled)} disabled:cursor-wait disabled:opacity-50`}
@@ -197,10 +200,40 @@ const cnSwitch = (on: boolean) =>
 const cnKnob = (on: boolean) =>
   `absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white transition-all ${on ? "left-[21px]" : "left-[3px]"}`;
 
+function LanguageRow() {
+  const { t, locale, setLocale } = useT();
+  const options: Array<{ id: Locale; label: string }> = [
+    { id: "zh", label: t("language.zh") },
+    { id: "en", label: t("language.en") },
+  ];
+  return (
+    <Card title={t("language.title")} subtitle={t("language.subtitle")}>
+      <div className="flex overflow-hidden rounded-lg border border-hairline/40">
+        {options.map((option, i) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={locale === option.id}
+            onClick={() => setLocale(option.id)}
+            className={cn(
+              "flex-1 py-1.5 text-[13px]",
+              i > 0 && "border-l border-hairline/40",
+              locale === option.id ? "bg-control text-ink" : "text-ink-secondary hover:bg-control/60 hover:text-ink",
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 /** Writes a redacted diagnostics file to a location the user picks. The
  * report holds versions, configured-or-not booleans and the server.log tail —
  * never credential values (the desktop shell does not read secret fields). */
 function DiagnosticsRow() {
+  const { t } = useT();
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
@@ -210,7 +243,7 @@ function DiagnosticsRow() {
     setResult(null);
     try {
       const path = await window.ogb.exportDiagnostics();
-      if (path) setResult({ kind: "success", message: `Saved to ${path}` });
+      if (path) setResult({ kind: "success", message: t("settings.diagnostics.saved", { path }) });
     } catch (e) {
       setResult({ kind: "error", message: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -220,17 +253,17 @@ function DiagnosticsRow() {
 
   return (
     <Card
-      title="Diagnostics"
-      subtitle="Versions, configuration on/off state and a redacted server log tail. Review the file before sharing it."
+      title={t("settings.diagnostics.title")}
+      subtitle={t("settings.diagnostics.subtitle")}
     >
       <div className="flex min-w-0 flex-col items-end gap-2">
         <button
           onClick={() => void exportDiagnostics()}
           disabled={exporting}
-          aria-label="Export diagnostics to a text file"
+          aria-label={t("settings.diagnostics.exportAria")}
           className="rounded-lg border border-hairline/40 px-3 py-1.5 text-[13px] text-ink hover:bg-control disabled:opacity-40"
         >
-          {exporting ? "Exporting…" : "Export Diagnostics…"}
+          {exporting ? t("settings.diagnostics.exporting") : t("settings.diagnostics.export")}
         </button>
         {result ? (
           <span
@@ -246,19 +279,21 @@ function DiagnosticsRow() {
 }
 
 export function SettingsModal() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const section = state.appSettingsSection;
   const dialogRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
-  const visibleSections = SECTIONS.filter((entry) => sectionMatches(entry, q));
+  const sections = useSettingsSections();
+  const visibleSections = sections.filter((entry) => sectionMatches(entry, q));
 
   useEffect(() => {
-    const visible = SECTIONS.filter((entry) => sectionMatches(entry, q));
+    const visible = sections.filter((entry) => sectionMatches(entry, q));
     if (visible.some((entry) => entry.id === section)) return;
     const first = visible[0];
     if (first) dispatch({ type: "toggleAppSettings", open: true, section: first.id });
-  }, [dispatch, q, section]);
+  }, [dispatch, q, section, sections]);
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -319,7 +354,7 @@ export function SettingsModal() {
         {/* section nav */}
         <nav className="flex w-[190px] shrink-0 flex-col gap-0.5 border-r border-hairline/40 p-3">
           <div id="app-settings-title" className="px-2 pb-2 pt-1 text-[15px] font-semibold text-ink">
-            Settings
+            {t("settings.title")}
           </div>
           <div className="mb-1.5 flex items-center gap-2 rounded-lg bg-control/70 px-2.5 py-1.5">
             <Search size={14} className="shrink-0 text-ink-secondary" />
@@ -332,14 +367,14 @@ export function SettingsModal() {
                 if (query) setQuery("");
                 else dispatch({ type: "toggleAppSettings", open: false });
               }}
-              placeholder="Search"
-              aria-label="Search settings"
+              placeholder={t("common.search")}
+              aria-label={t("settings.searchAria")}
               className="w-full bg-transparent text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none"
             />
           </div>
           {visibleSections.length === 0 && (
             <div className="px-2.5 py-4 text-[12.5px] leading-relaxed text-ink-secondary">
-              Nothing matches “{query.trim()}”
+              {t("settings.nothingMatches", { query: query.trim() })}
             </div>
           )}
           {visibleSections.map(({ id, label, icon: Icon }) => (
@@ -361,11 +396,11 @@ export function SettingsModal() {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center justify-between px-5 py-3">
             <span className="text-[15px] font-semibold text-ink">
-              {SECTIONS.find((s) => s.id === section)?.label}
+              {sections.find((s) => s.id === section)?.label}
             </span>
             <button
               onClick={() => dispatch({ type: "toggleAppSettings", open: false })}
-              aria-label="Close settings"
+              aria-label={t("settings.closeAria")}
               className="rounded-md p-1 text-ink-secondary hover:bg-control hover:text-ink"
             >
               <X size={18} />
@@ -375,13 +410,14 @@ export function SettingsModal() {
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5">
             {section === "general" && (
               <>
-                <Card title="Profile" subtitle="Shown in the sidebar. Saved as you go.">
+                <LanguageRow />
+                <Card title={t("settings.profile.title")} subtitle={t("settings.profile.subtitle")}>
                   <ProfileFields />
                 </Card>
-                <Card title="Skin" subtitle="Applies instantly and is remembered on this machine.">
+                <Card title={t("settings.skin.title")} subtitle={t("settings.skin.subtitle")}>
                   <SkinPicker />
                 </Card>
-                <Card title="Channel turns" subtitle="Set one maximum duration for every bot turn in a channel.">
+                <Card title={t("settings.channelTurns.title")} subtitle={t("settings.channelTurns.subtitle")}>
                   <RoomTurnTimeoutSettings />
                 </Card>
                 <ExperimentalFeaturesRow />
@@ -393,13 +429,13 @@ export function SettingsModal() {
 
             {section === "connections" && (
               <Card
-                title="Connections"
-                subtitle="Connected apps work automatically in the installed app. Other optional service keys stay on this computer."
+                title={t("settings.connections.title")}
+                subtitle={t("settings.connections.subtitle")}
               >
                 <div className="flex flex-col gap-4">
                   {state.config?.composio.mode === "managed" ? (
                     <div className="rounded-lg border border-success/25 bg-success/10 px-3 py-2 text-[13px] text-success">
-                      Connected apps service is ready
+                      {t("settings.connections.composioReady")}
                     </div>
                   ) : null}
                   <TranscriptionSettings />
@@ -407,7 +443,7 @@ export function SettingsModal() {
                   <VpsConnection />
                   <ApiKeyRow section="opencodeGo" />
                   <details className="rounded-lg border border-hairline/40 bg-inset px-3 py-2">
-                    <summary className="cursor-pointer text-[13px] text-ink-secondary">Self-host connected apps</summary>
+                    <summary className="cursor-pointer text-[13px] text-ink-secondary">{t("settings.connections.selfHost")}</summary>
                     <div className="mt-3">
                       <ApiKeyRow section="composio" />
                     </div>
