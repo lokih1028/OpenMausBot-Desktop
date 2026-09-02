@@ -44,14 +44,15 @@ import {
   resolveTranscriptWindow,
   tailWindowStart,
 } from "@/lib/transcript-window";
+import { useT, type Translate } from "@/i18n";
 
-function dayLabel(at: number): string {
+function dayLabel(at: number, t: Translate): string {
   const d = new Date(at);
   const now = new Date();
   const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 0) return t("group.today");
+  if (diffDays === 1) return t("group.yesterday");
   return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
@@ -93,6 +94,7 @@ function ClusterLabel({ bot, name, color }: { bot?: Bot; name: string; color: st
 
 /** Pin toggle for one room message — one pin per room, patchGroup path. */
 function PinToggle({ group, message }: { group: Group; message: Message }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const pinned = group.pinnedMessageId === message.id;
   return (
@@ -104,9 +106,9 @@ function PinToggle({ group, message }: { group: Group; message: Message }) {
           patch: { pinnedMessageId: pinned ? "" : message.id },
         })
       }
-      aria-label={pinned ? "Unpin message" : "Pin message"}
+      aria-label={pinned ? t("group.unpinMessage") : t("group.pinMessage")}
       className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
-      title={pinned ? "Unpin this message" : "Pin this message to the top of the channel"}
+      title={pinned ? t("group.unpinTitle") : t("group.pinTitle")}
     >
       {pinned ? <PinOff size={14} /> : <Pin size={14} />}
     </button>
@@ -128,6 +130,7 @@ const Transcript = memo(function Transcript({
   transcript: Message[];
   onReply: (message: Message) => void;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const memberOf = (id?: string) => members.find((b) => b.id === id);
   // Several bots working at once turn a room into a wall of chips; fold the
@@ -148,7 +151,7 @@ const Transcript = memo(function Transcript({
             <div key={item.id} className="contents">
               {newDay && (
                 <div className="py-3 text-center text-[13px] text-ink-secondary">
-                  {dayLabel(first.at)} {formatTime(first.at)}
+                  {dayLabel(first.at, t)} {formatTime(first.at)}
                 </div>
               )}
               {first.from && cluster && (
@@ -191,8 +194,8 @@ const Transcript = memo(function Transcript({
                 <button
                   type="button"
                   onClick={() => onReply(m)}
-                  aria-label="Reply to message"
-                  title="Reply"
+                  aria-label={t("group.replyToMessage")}
+                  title={t("group.replyTitle")}
                   className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
                 >
                   <MessageSquareReply size={14} />
@@ -211,7 +214,7 @@ const Transcript = memo(function Transcript({
                       <div className="mb-2">
                         <ReplyQuote
                           message={target}
-                          fallbackName="Bot"
+                          fallbackName={t("group.fallbackBot")}
                           compact
                           onJump={() =>
                             dispatch({ type: "focusMessage", threadId: group.threadId, messageId: target.id })
@@ -242,7 +245,7 @@ const Transcript = memo(function Transcript({
           <div key={m.id} className="contents" data-mid={m.id}>
             {newDay && (
               <div className="py-3 text-center text-[13px] text-ink-secondary">
-                {dayLabel(m.at)} {formatTime(m.at)}
+                {dayLabel(m.at, t)} {formatTime(m.at)}
               </div>
             )}
             {!user && m.from && newCluster && (
@@ -269,16 +272,17 @@ function StreamingBubble({ text }: { text: string }) {
 }
 
 function DefaultResponderSelect({ group, members }: { group: Group; members: Bot[] }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const responder = effectiveDefaultResponder(group, members);
   const value = responder.kind === "member" ? `member:${responder.botId}` : responder.kind;
   const lead = responder.kind === "member" ? members.find((member) => member.id === responder.botId) : undefined;
   const title =
     responder.kind === "everyone"
-      ? "Plain messages go to every channel member; @mentions override this"
+      ? t("group.responderHintEveryone")
       : responder.kind === "mentions"
-        ? "Only explicitly @mentioned bots respond"
-        : `Plain messages go to ${lead?.name ?? "the lead bot"}; @mentions override this`;
+        ? t("group.responderHintMentions")
+        : t("group.responderHintLead", { name: lead?.name ?? t("group.fallbackLeadName") });
 
   const change = (nextValue: string) => {
     let next: GroupDefaultResponder;
@@ -291,21 +295,21 @@ function DefaultResponderSelect({ group, members }: { group: Group; members: Bot
   return (
     <div className="relative shrink-0" title={title}>
       <select
-        aria-label="Default responder"
+        aria-label={t("group.defaultResponder")}
         value={value}
         onChange={(event) => change(event.target.value)}
         className="h-8 max-w-[190px] appearance-none truncate rounded-full border border-hairline/40 bg-raised/60 py-1 pl-3 pr-7 text-[12.5px] font-medium text-ink outline-none hover:bg-raised focus:border-accent"
       >
-        <optgroup label="Channel lead">
+        <optgroup label={t("group.channelLead")}>
           {members.map((member) => (
             <option key={member.id} value={`member:${member.id}`}>
-              Lead: {member.name}
+              {t("group.leadOption", { name: member.name })}
             </option>
           ))}
         </optgroup>
-        <optgroup label="Channel behavior">
-          <option value="everyone">Everyone responds</option>
-          <option value="mentions">Only when mentioned</option>
+        <optgroup label={t("group.channelBehavior")}>
+          <option value="everyone">{t("group.everyoneResponds")}</option>
+          <option value="mentions">{t("group.onlyMentioned")}</option>
         </optgroup>
       </select>
       <ChevronDown

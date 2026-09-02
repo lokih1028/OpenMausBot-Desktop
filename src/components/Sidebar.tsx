@@ -891,6 +891,7 @@ function ArchivedBotsPanel({
   onClose: () => void;
   onRestored: (message: string) => void;
 }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const dialogRef = useRef<HTMLDivElement>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -982,7 +983,7 @@ function ArchivedBotsPanel({
               onClick={onClose}
               disabled={restoringAll || Boolean(busyId)}
               className="flex size-10 items-center justify-center rounded-lg text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-40"
-              aria-label="Close archived bots"
+              aria-label={t("sidebar.closeArchived")}
             >
               <X size={21} />
             </button>
@@ -1164,7 +1165,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
       for (const response of restoredChiefs) dispatch({ type: "botPatched", bot: response.bot });
       const first = result.archived[0];
       if (first) dispatch({ type: "select", id: first.id });
-      setTeamFeedback({ error: false, text: "Previous team restored" });
+      setTeamFeedback({ error: false, text: t("sidebar.previousTeamRestored") });
     } catch (cause) {
       setTeamFeedback({ error: true, text: cause instanceof Error ? cause.message : String(cause) });
     }

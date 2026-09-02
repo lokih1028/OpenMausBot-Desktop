@@ -154,6 +154,7 @@ export function Composer({
   /** New rooms keep the composer inert until their setup is saved or skipped. */
   locked?: boolean;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const { capabilities } = useDesktopCapabilities();
   // Unified target: a 1:1 bot thread or a room. In a room the @ picker
@@ -175,8 +176,8 @@ export function Composer({
       members?.find((member) => member.id === group.busyBotId)
     : bot;
   const busyName = group
-    ? (members?.find((b) => b.id === group.busyBotId)?.name ?? "A bot")
-    : (bot?.name ?? "The bot");
+    ? (members?.find((b) => b.id === group.busyBotId)?.name ?? t("sidebar.aBot"))
+    : (bot?.name ?? t("composer.busyBotName"));
   // Per-thread draft: switching bots unmounts this component, so both the
   // text and its attachment chips have to outlive it (see lib/drafts).
   const [text, setText, attachments, setAttachments] = useComposerDraft(
@@ -401,6 +402,12 @@ export function Composer({
     setRecording((r) => !r);
   };
 
+  // room placeholder hint — recomputed only when the room or members change
+  const hintText = useMemo(
+    () => (group ? groupComposerHint(group, members ?? []) : ""),
+    [group, members],
+  );
+
   return (
     <div className="px-5 pb-3 pt-1">
       {speechError && (
@@ -413,12 +420,12 @@ export function Composer({
           <div className="mb-2 flex items-center gap-2 rounded-lg border border-hairline/40 bg-panel px-3 py-2 text-[12.5px] text-ink-secondary">
             <Clock size={13} className="shrink-0" />
             <span className="min-w-0 flex-1 truncate">
-              Queued — sends when {busyName} finishes: “{pendingChip}”
+              {t("composer.busyQueuedChip", { name: busyName, text: pendingChip })}
             </span>
             {group && (
               <button
                 onClick={() => setQueued(null)}
-                aria-label="Discard queued message"
+                aria-label={t("composer.discardQueued")}
                 className="rounded p-0.5 hover:bg-raised hover:text-ink"
               >
                 <X size={13} />
@@ -429,7 +436,7 @@ export function Composer({
         {pickerOpen && (
           <div
             role="listbox"
-            aria-label="Tag a bot"
+            aria-label={t("composer.tagBot")}
             className="absolute bottom-full left-2 z-20 mb-2 w-72 overflow-hidden rounded-xl border border-hairline/40 bg-raised shadow-lg"
           >
             {candidates.map((peer, i) => (
@@ -456,7 +463,7 @@ export function Composer({
                   </span>
                 )}
                 <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-ink">{peer.name}</span>
-                <span className="shrink-0 text-xs text-ink-secondary">{peer.bot ? "Agent" : "Channel"}</span>
+                <span className="shrink-0 text-xs text-ink-secondary">{peer.bot ? t("composer.mentionAgent") : t("composer.mentionChannel")}</span>
               </button>
             ))}
           </div>
@@ -512,8 +519,8 @@ export function Composer({
               <button
                 type="button"
                 onClick={() => fileInput.current?.click()}
-                aria-label="Attach a file"
-                title="Attach a file"
+                aria-label={t("composer.attachFile")}
+                title={t("composer.attachFile")}
                 className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink"
               >
                 <Paperclip size={17} />
@@ -603,22 +610,22 @@ export function Composer({
           disabled={Boolean(approval) || locked}
           placeholder={
             locked
-              ? "Finish room setup to start chatting"
+              ? t("composer.finishRoomSetup")
               : approval
-              ? "Answer the approval above to continue"
+              ? t("composer.answerApproval")
               : recording
-              ? "Listening…"
+              ? t("composer.listening")
               : busy && canSteer
-                ? `${busyName} is working — Enter sends this into the running turn`
+                ? t("composer.busySteer", { name: busyName })
               : busy
                 ? group
-                  ? `${busyName} is working — Enter queues your message`
-                  : `${busyName} is working — sends when this turn finishes`
+                  ? t("composer.busyQueue", { name: busyName })
+                  : t("composer.busySends", { name: busyName })
                 : group
-                  ? `Message ${group.name} — ${groupComposerHint(group, members ?? [])}`
-                  : `Message ${bot?.name ?? ""}`
+                  ? t("composer.groupPlaceholder", { name: group.name, hint: hintText })
+                  : t("composer.botPlaceholder", { name: bot?.name ?? "" })
           }
-          aria-label={`Message ${group ? group.name : (bot?.name ?? "")}`}
+          aria-label={t("composer.ariaMessage", { name: group ? group.name : (bot?.name ?? "") })}
             className="col-span-full row-start-1 max-h-60 min-h-[40px] w-full resize-none self-center bg-transparent px-1 pb-0 pt-2.5 text-[15px] leading-6 text-ink placeholder:text-ink-secondary focus:outline-none"
           />
           <div className="col-start-3 row-start-2 mt-1 flex items-center gap-1">
@@ -628,9 +635,9 @@ export function Composer({
               if (group) dispatch({ type: "interruptGroup", groupId: group.id });
               else if (bot) dispatch({ type: "interrupt", botId: bot.id });
             }}
-            aria-label="Stop this turn"
+            aria-label={t("chat.stopTurn")}
             className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-raised hover:text-ink"
-            title="Stop"
+            title={t("common.stop")}
           >
             <Square size={14} className="fill-current" />
           </button>
@@ -638,14 +645,14 @@ export function Composer({
         {!locked && !busy && !hasContent && capabilities.dictation.available && (
           <button
             onClick={toggleMic}
-            aria-label={recording ? "Stop dictation" : "Start dictation"}
+            aria-label={recording ? t("composer.stopDictation") : t("composer.startDictation")}
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-full",
               recording
                 ? "animate-pulse bg-danger/20 text-danger"
                 : "text-ink-secondary hover:bg-raised hover:text-ink",
             )}
-            title={recording ? "Stop dictation (Esc)" : "Dictate"}
+            title={recording ? t("composer.stopDictationEsc") : t("composer.dictate")}
           >
             <Mic size={18} />
           </button>
@@ -653,8 +660,8 @@ export function Composer({
         {hasContent && !locked && (
           <button
             onClick={send}
-            aria-label={busy && canSteer ? "Send into the running turn" : busy ? "Queue message" : "Send message"}
-            title={busy && canSteer ? "Send into the running turn" : busy ? "Sends when the current turn finishes" : "Send"}
+            aria-label={busy && canSteer ? t("composer.sendSteer") : busy ? t("composer.queueMessage") : t("composer.sendMessage")}
+            title={busy && canSteer ? t("composer.sendSteer") : busy ? t("composer.busyQueueTitle") : t("common.send")}
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-full text-white",
               busy && !canSteer ? "bg-raised text-ink-secondary hover:bg-raised-hover" : "bg-accent hover:brightness-110",

@@ -8,21 +8,21 @@ function desktopViewerUrl(rawUrl) {
   if (Object.prototype.toString.call(rawUrl) !== "[object String]" || !rawUrl.trim()) {
     throw new Error("A desktop viewer address is required");
   }
-  if (rawUrl.length > 16_384) throw new Error("The desktop viewer address is too long");
+  if (rawUrl.length > 16_384) throw new Error("桌面查看器地址过长");
 
   let url;
   try {
     url = new URL(rawUrl);
   } catch {
-    throw new Error("The desktop viewer address is invalid");
+    throw new Error("桌面查看器地址无效");
   }
 
   const localHttp = url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname);
   if (url.protocol !== "https:" && !localHttp) {
-    throw new Error("The desktop viewer must use HTTPS or the local VM address");
+    throw new Error("桌面查看器必须使用 HTTPS 或本地虚拟机地址");
   }
   if (url.username || url.password) {
-    throw new Error("Desktop viewer credentials must not use URL user info");
+    throw new Error("桌面查看器凭据不能包含 URL 用户信息");
   }
   return url;
 }

@@ -8,6 +8,7 @@ import { ChevronRight, Check, X } from "lucide-react";
 import type { Message } from "@/state/store";
 import { describeRun } from "@/lib/activity-runs";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 export function ActivityRun({
   messages,
@@ -21,6 +22,7 @@ export function ActivityRun({
   /** the individual chips, rendered by whichever transcript owns them */
   children: React.ReactNode;
 }) {
+  const { t } = useT();
   const failed = messages.some((message) => message.tool?.ok === false);
   const [open, setOpen] = useState(failed || forceOpen);
   useEffect(() => {
@@ -50,7 +52,7 @@ export function ActivityRun({
         type="button"
         onClick={() => setOpen(true)}
         aria-expanded={false}
-        title="Show every step"
+        title={t("misc.activityRun.showAll")}
         className={cn(
           "flex items-center gap-2 rounded-full border border-hairline/40 bg-panel px-3 py-1.5 text-[13px] hover:bg-control",
           failed ? "text-danger" : "text-ink-secondary",

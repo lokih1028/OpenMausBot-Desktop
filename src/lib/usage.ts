@@ -54,7 +54,7 @@ export function usageChip(u: TaskUsage): string {
 
 /** How to caption a cost figure given how the engine is billed. */
 export function costCaption(billing: "metered" | "subscription" | undefined): string {
-  if (billing === "subscription") return "equivalent — on your subscription, not billed";
-  if (billing === "metered") return "billed to your API key";
-  return "as reported by the engine";
+  if (billing === "subscription") return "等值计费 — 走你的订阅，不再单独扣费";
+  if (billing === "metered") return "按用量计入你的 API 密钥";
+  return "由引擎上报";
 }

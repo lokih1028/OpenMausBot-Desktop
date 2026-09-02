@@ -30,6 +30,7 @@ import { pendingApprovals } from "./PendingApproval";
 import { cn } from "@/lib/cn";
 import { track } from "@/lib/analytics";
 import { useDesktopCapabilities } from "./DesktopCapabilities";
+import { useT } from "@/i18n";
 
 /** Spoken answers to a permission card. Anything else is read as a reply
  * to the bot, not as consent — an approval must never be granted by a
@@ -70,6 +71,7 @@ export function CallTargetButton({
   requireExplicitVoices: boolean;
   onStart: () => void;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const { capabilities, ready: capabilitiesReady } = useDesktopCapabilities();
   const active = useOnCall() === targetId;
@@ -85,29 +87,29 @@ export function CallTargetButton({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const helpId = useId();
   const label = active
-    ? `Hang up on ${targetName}`
+    ? t("call.hangUpOn", { name: targetName })
     : !capabilitiesReady
-      ? "Checking call availability"
+      ? t("call.checkingAvailability")
       : !supported
-        ? "Calls currently need the macOS desktop app"
+        ? t("call.needsMac")
         : !configured
-          ? "Set up a voice in an agent profile to make calls"
+          ? t("call.needsVoiceSelf")
           : !voiceReady
-            ? "Pick a voice in an agent profile to make calls"
-            : `Call ${targetName}`;
+            ? t("call.needsVoicePick")
+            : t("call.callTarget", { name: targetName });
 
   const reason = !capabilitiesReady
-    ? "Checking whether this device can make calls."
+    ? t("call.checkingDevice")
     : !capabilities.dictation.available
-      ? "Calls require OpenMausBot for macOS because speech recognition runs on-device."
+      ? t("call.needsDictationDevice")
       : !window.ogb?.speechStart
-        ? "The speech service is unavailable in this app build. Restart or update OpenMausBot."
+        ? t("call.speechUnavailable")
         : !configured
-          ? "Add an ElevenLabs API key — or switch to the built-in Mac voices — so the bot can speak during calls."
+          ? t("call.needsVoiceKey")
           : !voiceReady
             ? voices.length > 1
-              ? "Give every channel member a voice before starting a channel call."
-              : "Choose a voice before starting a call."
+              ? t("call.groupNeedsVoices")
+              : t("call.chooseVoiceFirst")
             : "";
 
   useEffect(() => {
@@ -164,10 +166,10 @@ export function CallTargetButton({
         <div
           id={helpId}
           role="group"
-          aria-label="Call unavailable"
+          aria-label={t("call.unavailable")}
           className="animate-pop-in absolute right-0 z-30 mt-1.5 w-[280px] rounded-xl border border-hairline bg-panel p-3 text-left shadow-2xl"
         >
-          <div className="text-[13px] font-medium text-ink">Call unavailable</div>
+          <div className="text-[13px] font-medium text-ink">{t("call.unavailable")}</div>
           <div className="mt-1 text-[12px] leading-[1.45] text-ink-secondary">{reason}</div>
           {voiceSetupRequired && (
             <button
@@ -179,7 +181,7 @@ export function CallTargetButton({
               }}
               className="mt-2.5 rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white hover:brightness-110"
             >
-              Open agent settings
+              {t("call.openAgentSettings")}
             </button>
           )}
         </div>
@@ -196,13 +198,14 @@ export function CallOverlay({ bot }: { bot: Bot }) {
 
 function Call({ bot }: { bot: Bot }) {
   const { dispatch } = useStore();
+  const { t } = useT();
   const speech = useSpeech();
   const initialPhase: Phase = bot.busy ? "working" : "listening";
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [heard, setHeard] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const pushToTalk = usePushToTalk(bot.id, phase === "listening", () => {
-    setNote("Push to talk couldn't start. Check Microphone and Speech Recognition access.");
+    setNote(t("call.micDeniedNote"));
   });
 
   const messages = visibleMessages(bot);
@@ -252,10 +255,10 @@ function Call({ bot }: { bot: Bot }) {
     setNote(null);
     void window.ogb?.speechStart({ endpointMs: CALL_ENDPOINT_MS }).catch(() => {
       if (alive.current && currentCall() === bot.id) {
-        setNote("The microphone couldn't start. Check Microphone and Speech Recognition access.");
+        setNote(t("call.micStartFailed"));
       }
     });
-  }, [bot.id, move]);
+  }, [bot.id, move, t]);
 
   /** Speak, with the microphone closed for the duration (see the header
    * comment — an open mic during playback is a feedback loop). */
@@ -303,7 +306,7 @@ function Call({ bot }: { bot: Bot }) {
     const offTranscript = bridge.onSpeechTranscript((line) => {
       if (!alive.current || currentCall() !== bot.id || phaseRef.current !== "listening") return;
       if (line.error) {
-        setNote("Dictation stopped unexpectedly. Check Microphone and Speech Recognition access.");
+        setNote(t("call.dictationStopped"));
         return;
       }
       if (typeof line.text !== "string") return;
@@ -323,14 +326,14 @@ function Call({ bot }: { bot: Bot }) {
             threadId: bot.threadId,
             requestId: open,
             behavior: allow ? "allow" : "deny",
-            message: allow ? undefined : "Denied by the user, on a call.",
+            message: allow ? undefined : t("call.deniedByUser"),
           });
           move("working");
           return;
         }
         // not a decision — leave the card up and say so rather than
         // guessing consent from an ambiguous sentence
-        void sayThenListen("Sorry — is that a yes or a no?");
+        void sayThenListen(t("call.yesOrNo"));
         return;
       }
 
@@ -348,14 +351,14 @@ function Call({ bot }: { bot: Bot }) {
     const offEnd = bridge.onSpeechEnd(({ code, reason }) => {
       if (!alive.current || currentCall() !== bot.id) return;
       if (code === 2) {
-        setNote("Calls need macOS dictation, which isn't available here yet.");
+        setNote(t("call.needsDictation"));
         return;
       }
       if (code === 1) {
         setNote(
           reason === "helper-build-failed"
-            ? "The dictation helper couldn't be built. Install Apple's Command Line Tools and try again."
-            : "Dictation needs Microphone + Speech Recognition access in System Settings.",
+            ? t("call.helperMissing")
+            : t("call.dictationNeedsPermission"),
         );
         return;
       }
@@ -393,7 +396,7 @@ function Call({ bot }: { bot: Bot }) {
     if (approval && askedApproval.current !== approval.requestId && phase !== "speaking") {
       askedApproval.current = approval.requestId;
       spokenIds.current.add(approval.message.id);
-      void sayThenListen(`${bot.name} wants to ${approval.tool}. ${approval.detail}. Should I allow it?`);
+      void sayThenListen(t("call.approvalAsk", { name: bot.name, tool: approval.tool, detail: approval.detail }));
       return;
     }
     if (
@@ -405,9 +408,9 @@ function Call({ bot }: { bot: Bot }) {
       spokenIds.current.add(question.id);
       const detail = question.card.subtitle.trim();
       const choices = question.card.options.length
-        ? ` The options are ${question.card.options.join(", ")}.`
+        ? t("call.questionChoices", { options: question.card.options.join(", ") })
         : "";
-      void sayThenListen(`${bot.name} asks: ${detail}${/[.!?]$/.test(detail) ? "" : "."}${choices}`);
+      void sayThenListen(t("call.questionAsk", { name: bot.name, detail }) + (/[.!?]$/.test(detail) ? "" : ".") + choices);
       return;
     }
     const fresh = messages.filter((m) => !spokenIds.current.has(m.id));
@@ -470,19 +473,19 @@ function Call({ bot }: { bot: Bot }) {
   const status =
     phase === "listening"
       ? pushToTalk
-        ? "Push to talk"
-        : "Listening"
+        ? t("call.pushToTalk")
+        : t("call.listening")
       : phase === "sending"
-        ? "One moment"
+        ? t("call.oneMoment")
         : phase === "speaking"
           ? bot.name
-          : "Working";
+          : t("call.working");
 
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-app/95 backdrop-blur-sm">
       <button
         onClick={() => endCall(bot.id)}
-        aria-label="Hang up"
+        aria-label={t("call.hangUp")}
         className="absolute right-5 top-5 rounded-md p-2 text-ink-secondary hover:bg-raised hover:text-ink"
       >
         <X size={18} />
@@ -503,7 +506,7 @@ function Call({ bot }: { bot: Bot }) {
         {phase === "listening" ? (
           heard || (
             <span className="text-ink-secondary">
-              {pushToTalk ? "Release Control + Option to send…" : "Say something…"}
+              {pushToTalk ? t("call.releaseKeysToSend") : t("call.saySomething")}
             </span>
           )
         ) : (
@@ -518,7 +521,7 @@ function Call({ bot }: { bot: Bot }) {
             onClick={listen}
             className="rounded-full border border-warning/40 px-3 py-1.5 text-[12px] hover:bg-warning/10"
           >
-            Try microphone again
+            {t("call.tryMicAgain")}
           </button>
         </div>
       )}
@@ -534,19 +537,19 @@ function Call({ bot }: { bot: Bot }) {
             }}
             className="rounded-full border border-hairline/50 px-4 py-2 text-[13.5px] text-ink hover:bg-raised"
           >
-            Interrupt
+            {t("call.interrupt")}
           </button>
         )}
         <button
           onClick={() => endCall(bot.id)}
           className="flex items-center gap-2 rounded-full bg-danger px-5 py-2.5 text-[14px] font-medium text-white hover:brightness-110"
         >
-          <PhoneOff size={16} /> Hang up
+          <PhoneOff size={16} /> {t("call.hangUp")}
         </button>
       </div>
 
       <div className="text-[11.5px] text-ink-secondary/70">
-        Hold Control + Option to talk · Space interrupts · Esc hangs up
+        {t("call.keysHint")}
       </div>
     </div>
   );

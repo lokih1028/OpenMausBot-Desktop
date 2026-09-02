@@ -15,7 +15,6 @@ import {
   QrCode,
   ShieldCheck,
   Smartphone,
-  Wifi,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -54,6 +53,7 @@ import {
 } from "../lib/phone-setup";
 import type { CompanionAccountState } from "../types/ogb";
 import { ConnectionDetail } from "./ConnectionDetail";
+import { useT } from "@/i18n";
 
 export interface PhoneDevice {
   id: string;
@@ -873,10 +873,11 @@ export function usePhoneSetupController(profileEmail = ""): PhoneSetupController
 }
 
 function ValuePoints() {
+  const { t } = useT();
   const points: Array<{ Icon: typeof Smartphone; title: string; detail: string }> = [
-    { Icon: Smartphone, title: "Your chats", detail: "Read and reply from your phone." },
-    { Icon: Check, title: "Quick approvals", detail: "Keep work moving when you step away." },
-    { Icon: ShieldCheck, title: "Private by default", detail: "Only phones you approve can connect." },
+    { Icon: Smartphone, title: t("misc.phone.valueChatsTitle"), detail: t("misc.phone.valueChatsDetail") },
+    { Icon: Check, title: t("misc.phone.valueApprovalsTitle"), detail: t("misc.phone.valueApprovalsDetail") },
+    { Icon: ShieldCheck, title: t("misc.phone.valuePrivateTitle"), detail: t("misc.phone.valuePrivateDetail") },
   ];
   return (
     <div className="mt-5 grid w-full gap-2 sm:grid-cols-3">
@@ -903,6 +904,7 @@ export function PhoneSetupFlowView({
   onComplete?: () => void;
 }) {
   const c = controller;
+  const { t } = useT();
   const actionError = companionAccountActionError(c.account, c.accountError);
   const canSubmitEmail = /^\S+@\S+\.\S+$/.test(c.email.trim());
   const manualCodeMode = phonePairingManualCodeMode(Boolean(c.state?.pairing), c.pairingLink);
@@ -913,9 +915,9 @@ export function PhoneSetupFlowView({
         <div className="flex size-14 items-center justify-center rounded-2xl bg-accent/12 text-accent">
           <Smartphone size={26} />
         </div>
-        <h2 className="mt-4 text-[19px] font-semibold text-ink">Use OpenMausBot from your phone</h2>
+        <h2 className="mt-4 text-[19px] font-semibold text-ink">{t("misc.phone.introTitle")}</h2>
         <p className="mt-1.5 max-w-[460px] text-[13.5px] leading-relaxed text-ink-secondary">
-          Check chats, answer approvals, and send new work without staying at your computer.
+          {t("misc.phone.introBody")}
         </p>
         <ValuePoints />
         <button
@@ -925,9 +927,9 @@ export function PhoneSetupFlowView({
         >
           {variant === "settings"
             ? c.state?.devices.length
-              ? "Pair another phone"
-              : "Pair a phone"
-            : "Set up my phone"}
+              ? t("misc.phone.pairAnother")
+              : t("misc.phone.pair")
+            : t("misc.phone.setup")}
         </button>
         {c.error && <p role="alert" className="mt-3 max-w-[390px] text-[12.5px] text-danger">{c.error}</p>}
         {variant === "onboarding" && (
@@ -939,10 +941,10 @@ export function PhoneSetupFlowView({
               }}
               className="mt-2.5 text-[12.5px] text-ink-secondary hover:text-ink"
             >
-              Not now
+              {t("misc.phone.notNow")}
             </button>
             <p className="mt-2 text-[11.5px] text-ink-secondary">
-              You can resume anytime from Settings → Phone.
+              {t("misc.phone.resumeHint")}
             </p>
           </>
         )}
@@ -956,31 +958,31 @@ export function PhoneSetupFlowView({
     return (
       <div className="mx-auto flex w-full max-w-[430px] flex-col">
         <button onClick={c.cancel} className="mb-4 flex w-fit items-center gap-1.5 text-[12px] text-ink-secondary hover:text-ink">
-          <ArrowLeft size={13} /> Back
+          <ArrowLeft size={13} /> {t("misc.phone.back")}
         </button>
         <div className="flex size-11 items-center justify-center rounded-xl bg-accent/12 text-accent">
           <Mail size={20} />
         </div>
         <h2 className="mt-3 text-[18px] font-semibold text-ink">
-          {unavailable || failed ? "Secure access needs attention" : "Sign in to pair securely"}
+          {unavailable || failed ? t("misc.phone.secureAttention") : t("misc.phone.signInToPair")}
         </h2>
         <p
           role={c.setupTimedOut ? "alert" : undefined}
           className="mt-1 text-[13px] leading-relaxed text-ink-secondary"
         >
           {unavailable
-            ? "Online phone access is not available right now. You can still pair directly on the same Wi-Fi."
+            ? t("misc.phone.onlineUnavailable")
             : c.setupTimedOut
-              ? "Secure access is taking longer than expected. You can try again or pair directly on this Wi-Fi."
+              ? t("misc.phone.setupTimedOut")
             : failed
-              ? c.account?.message ?? "We could not finish creating your private connection."
-              : "We’ll email you a one-time code. No password needed."}
+              ? c.account?.message ?? t("misc.phone.createFailed")
+              : t("misc.phone.emailCode")}
         </p>
 
         {!unavailable && !failed && (
           <div className="mt-5 flex flex-col gap-3">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[12px] font-medium text-ink-secondary">Email</span>
+              <span className="text-[12px] font-medium text-ink-secondary">{t("misc.phone.emailLabel")}</span>
               <input
                 autoFocus
                 autoComplete="email"
@@ -997,7 +999,7 @@ export function PhoneSetupFlowView({
             </label>
             {c.codeSent && (
               <label className="flex flex-col gap-1.5">
-                <span className="text-[12px] font-medium text-ink-secondary">8-digit code</span>
+                <span className="text-[12px] font-medium text-ink-secondary">{t("misc.phone.codeLabel8")}</span>
                 <input
                   autoFocus
                   autoComplete="one-time-code"
@@ -1018,7 +1020,7 @@ export function PhoneSetupFlowView({
               onClick={c.codeSent ? c.verifyCode : c.requestCode}
               className="rounded-lg bg-accent py-2.5 text-[14px] font-medium text-white hover:opacity-90 disabled:opacity-40"
             >
-              {c.accountBusy ? "Working…" : c.codeSent ? "Verify and continue" : "Email me a code"}
+              {c.accountBusy ? t("misc.phone.working") : c.codeSent ? t("misc.phone.verifyContinue") : t("misc.phone.emailMeCode")}
             </button>
             {c.codeSent && (
               <button
@@ -1026,11 +1028,11 @@ export function PhoneSetupFlowView({
                 onClick={c.changeEmail}
                 className="text-[12px] text-ink-secondary hover:text-ink disabled:opacity-40"
               >
-                Use another email
+                {t("misc.phone.useAnotherEmail")}
               </button>
             )}
             {c.codeSent && !actionError && (
-              <p className="text-[11.5px] text-ink-secondary">The code expires in 10 minutes.</p>
+              <p className="text-[11.5px] text-ink-secondary">{t("misc.phone.codeExpires10")}</p>
             )}
           </div>
         )}
@@ -1041,12 +1043,12 @@ export function PhoneSetupFlowView({
             onClick={c.retryAccount}
             className="mt-5 rounded-lg bg-accent py-2.5 text-[14px] font-medium text-white disabled:opacity-40"
           >
-            {c.accountBusy ? "Trying again…" : "Try secure access again"}
+            {c.accountBusy ? t("misc.phone.tryingAgain") : t("misc.phone.retrySecure")}
           </button>
         )}
         {actionError && <p role="alert" className="mt-3 text-[12.5px] text-danger">{actionError}</p>}
         <div className="my-4 flex items-center gap-3 text-[11px] text-ink-secondary">
-          <span className="h-px flex-1 bg-hairline/40" /> or <span className="h-px flex-1 bg-hairline/40" />
+          <span className="h-px flex-1 bg-hairline/40" /> {t("misc.phone.or")} <span className="h-px flex-1 bg-hairline/40" />
         </div>
         {c.tailscaleAvailable && (
           <>
@@ -1055,10 +1057,10 @@ export function PhoneSetupFlowView({
               onClick={c.useTailscale}
               className="flex items-center justify-center gap-2 rounded-lg border border-hairline/50 py-2.5 text-[13px] text-ink hover:bg-control disabled:opacity-40"
             >
-              <ShieldCheck size={15} /> Pair over Tailscale
+              <ShieldCheck size={15} /> {t("misc.phone.pairOverTailscale")}
             </button>
             <p className="mt-2 text-center text-[11px] leading-relaxed text-ink-secondary">
-              Your iPhone must be signed in to the same tailnet.
+              {t("misc.phone.tailnetHint")}
             </p>
           </>
         )}
@@ -1067,10 +1069,10 @@ export function PhoneSetupFlowView({
           onClick={c.useLocal}
           className={`${c.tailscaleAvailable ? "mt-3" : ""} flex items-center justify-center gap-2 rounded-lg border border-hairline/50 py-2.5 text-[13px] text-ink hover:bg-control disabled:opacity-40`}
         >
-          <Wifi size={15} /> Pair on this Wi-Fi instead
+          {t("misc.phone.pairThisWifi")}
         </button>
         <p className="mt-2 text-center text-[11px] leading-relaxed text-ink-secondary">
-          Both devices must be on a network that lets them see each other.
+          {t("misc.phone.wifiHint")}
         </p>
       </div>
     );
@@ -1084,22 +1086,22 @@ export function PhoneSetupFlowView({
         </div>
         <h2 className="mt-4 text-[18px] font-semibold text-ink">
           {c.localFallback
-            ? "Preparing your pairing code"
+            ? t("misc.phone.preparingLocal")
             : c.tailscaleFallback
-              ? "Preparing Tailscale pairing"
-              : "Creating secure phone access"}
+              ? t("misc.phone.preparingTailscale")
+              : t("misc.phone.creatingSecure")}
         </h2>
         <p className="mt-1.5 max-w-[360px] text-[13px] leading-relaxed text-ink-secondary">
           {c.localFallback
-            ? "This should only take a moment."
+            ? t("misc.phone.moment")
             : c.tailscaleFallback
-              ? "Your pairing code will use your private tailnet connection."
-            : "We’re giving this computer a private connection that works even when your phone is away from this Wi-Fi."}
+              ? t("misc.phone.tailnetCode")
+            : t("misc.phone.privateConnection")}
         </p>
         {(c.error || c.accountError) && (
           <p role="alert" className="mt-3 max-w-[380px] text-[12.5px] text-danger">{c.error ?? c.accountError}</p>
         )}
-        <button onClick={c.cancel} className="mt-5 text-[12px] text-ink-secondary hover:text-ink">Cancel</button>
+        <button onClick={c.cancel} className="mt-5 text-[12px] text-ink-secondary hover:text-ink">{t("common.cancel")}</button>
       </div>
     );
   }
@@ -1110,9 +1112,9 @@ export function PhoneSetupFlowView({
         <div className="flex size-14 items-center justify-center rounded-full bg-success/15 text-success">
           <Check size={28} />
         </div>
-        <h2 className="mt-4 text-[19px] font-semibold text-ink">Your phone is ready</h2>
+        <h2 className="mt-4 text-[19px] font-semibold text-ink">{t("misc.phone.phoneReady")}</h2>
         <p className="mt-1.5 text-[13px] text-ink-secondary">
-          It can now open chats, answer approvals, and send new work.
+          {t("misc.phone.phoneReadyBody")}
         </p>
         <button
           onClick={() => {
@@ -1121,7 +1123,7 @@ export function PhoneSetupFlowView({
           }}
           className="mt-5 w-full max-w-[280px] rounded-lg bg-accent py-2.5 text-[14px] font-medium text-white"
         >
-          {variant === "onboarding" ? "Start using OpenMausBot" : "Done"}
+          {variant === "onboarding" ? t("misc.phone.startUsing") : t("misc.phone.done")}
         </button>
       </div>
     );
@@ -1133,49 +1135,49 @@ export function PhoneSetupFlowView({
         <QrCode size={23} />
       </div>
       <h2 className="mt-3 text-[18px] font-semibold text-ink">
-        {c.pairingExpired ? "That code expired" : "Scan with your iPhone"}
+        {c.pairingExpired ? t("misc.phone.codeExpired") : t("misc.phone.scanIphone")}
       </h2>
       <p className="mt-1 text-[13px] text-ink-secondary">
         {c.pairingExpired
-          ? "Create a fresh code when your phone is ready."
-          : "Open OpenMaus on your iPhone and scan this code."}
+          ? t("misc.phone.freshCode")
+          : t("misc.phone.openAndScan")}
       </p>
       {!c.pairingExpired && c.pairingLink && (
-        <div className="mt-4 rounded-2xl bg-white p-3.5" aria-label="Phone pairing QR code">
+        <div className="mt-4 rounded-2xl bg-white p-3.5" aria-label={t("misc.phone.qrAria")}>
           <QRCodeSVG value={c.pairingLink} size={180} level="M" bgColor="#ffffff" fgColor="#111111" />
         </div>
       )}
       {!c.pairingExpired && manualCodeMode === "direct" && c.state?.pairing && (
         <div className="mt-4 w-full max-w-[320px] rounded-xl bg-inset px-4 py-3 text-[12.5px] text-ink-secondary">
-          <div>Open OpenMausMobile and enter this manual code.</div>
+          <div>{t("misc.phone.mobileManualCode")}</div>
           <div className="mt-2 font-mono text-[22px] tracking-[0.25em] text-ink">
             {c.state.pairing.code}
           </div>
         </div>
       )}
       {!c.pairingExpired && manualCodeMode === "details" && c.state?.pairing && (
-        <p className="mt-3 text-[11.5px] text-ink-secondary">Code expires in {c.secondsLeft}s</p>
+        <p className="mt-3 text-[11.5px] text-ink-secondary">{t("misc.phone.expiresInSeconds", { seconds: c.secondsLeft })}</p>
       )}
       {c.pairingExpired && (
         <button onClick={c.refreshCode} className="mt-5 rounded-lg bg-accent px-5 py-2.5 text-[14px] font-medium text-white">
-          Create a new code
+          {t("misc.phone.newCode")}
         </button>
       )}
       {!c.pairingExpired && c.state?.pairing && (
         <details className="mt-4 w-full max-w-[390px] rounded-lg border border-hairline/40 px-3 py-2 text-left">
-          <summary className="cursor-pointer text-[12px] text-ink-secondary">Having trouble?</summary>
+          <summary className="cursor-pointer text-[12px] text-ink-secondary">{t("misc.phone.trouble")}</summary>
           <div className="mt-3 text-[12px] text-ink-secondary">
-            Manual code
+            {t("misc.phone.manualCode")}
             <div className="mt-1 font-mono text-[22px] tracking-[0.25em] text-ink">{c.state.pairing.code}</div>
             {c.address && (
               <div className="mt-3">
-                <ConnectionDetail label="Pairing address" value={`${c.address}:${c.pairingPort}`} />
+                <ConnectionDetail label={t("misc.phone.pairingUrlLabel")} value={`${c.address}:${c.pairingPort}`} />
               </div>
             )}
           </div>
         </details>
       )}
-      <button onClick={c.cancel} className="mt-4 text-[12px] text-ink-secondary hover:text-ink">Cancel</button>
+      <button onClick={c.cancel} className="mt-4 text-[12px] text-ink-secondary hover:text-ink">{t("common.cancel")}</button>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Check, ExternalLink, KeyRound, Loader2, LockKeyhole, RefreshCw, X } fro
 
 import { credentialConfigPatch, credentialResumeOutcome } from "../../shared/credential-request";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 import { api, useStore, type ConfigStatus, type Message } from "@/state/store";
 
 export function SecretRequestCard({
@@ -15,6 +16,7 @@ export function SecretRequestCard({
   message: Message;
 }) {
   const { dispatch } = useStore();
+  const { t } = useT();
   const secret = message.secret!;
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -27,18 +29,18 @@ export function SecretRequestCard({
   const declined = outcome === "dismissed";
   const description = provided
     ? secret.resumed
-      ? "Saved securely. Your bot is continuing the task."
-      : "Saved securely. Your bot will continue when its current turn settles."
+      ? t("misc.secretRequest.savedContinuing")
+      : t("misc.secretRequest.savedWaiting")
     : declined
-      ? "You chose not to provide this credential. OpenMausBot could not resume the bot yet."
+      ? t("misc.secretRequest.declined")
       : secret.description;
   const footerLabel = declined
-    ? "Continuing without this credential failed"
+    ? t("misc.secretRequest.footerDeclined")
     : secret.resumed
-      ? "Bot resumed without seeing the key"
+      ? t("misc.secretRequest.footerResumed")
       : error
-        ? "The key is safe; resuming failed"
-        : "Waiting to resume safely";
+        ? t("misc.secretRequest.footerKeySafeFailed")
+        : t("misc.secretRequest.footerWaiting");
 
   // A successful decline has no durable card to show. If its continuation
   // failed, bring the card back with the same retry affordance as a saved key.
@@ -112,7 +114,7 @@ export function SecretRequestCard({
               <span className="truncate text-[14px] font-semibold text-ink">{secret.label}</span>
               {provided && (
                 <span className="flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-medium text-success">
-                  <Check size={11} /> Saved
+                  <Check size={11} /> {t("misc.secretRequest.savedBadge")}
                 </span>
               )}
             </div>
@@ -121,7 +123,7 @@ export function SecretRequestCard({
             </p>
             {!provided && !declined && (
               <p className="mt-1 flex items-center gap-1 text-[11.5px] text-ink-secondary/80">
-                <LockKeyhole size={11} /> Stored securely by OpenMausBot and never added to chat.
+                <LockKeyhole size={11} /> {t("misc.secretRequest.storageNote")}
               </p>
             )}
             {error && <p role="alert" className="mt-2 text-[12px] text-danger">{error}</p>}
@@ -129,8 +131,8 @@ export function SecretRequestCard({
           {!provided && !declined && (
             <button
               onClick={dismiss}
-              aria-label="Not now"
-              title="Not now"
+              aria-label={t("misc.secretRequest.notNow")}
+              title={t("misc.secretRequest.notNow")}
               className="rounded-md p-1 text-ink-secondary hover:bg-control hover:text-ink"
             >
               <X size={15} />
@@ -157,7 +159,7 @@ export function SecretRequestCard({
                 className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[12.5px] font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? <Loader2 size={13} className="animate-spin" /> : <LockKeyhole size={13} />}
-                {savedLocally ? "Continue task" : "Save securely"}
+                {savedLocally ? t("misc.secretRequest.continueTask") : t("misc.secretRequest.saveSecurely")}
               </button>
             </div>
             <a
@@ -166,7 +168,7 @@ export function SecretRequestCard({
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-1 text-[11.5px] text-accent hover:underline"
             >
-              Where to get this key <ExternalLink size={11} />
+              {t("misc.secretRequest.whereToGet")} <ExternalLink size={11} />
             </a>
           </form>
         )}
@@ -185,7 +187,7 @@ export function SecretRequestCard({
                 disabled={saving}
                 className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
-                {saving ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Try again
+                {saving ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} {t("misc.secretRequest.tryAgain")}
               </button>
             )}
           </div>

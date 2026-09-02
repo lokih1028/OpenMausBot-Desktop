@@ -44,7 +44,7 @@ describe("companion status refresh", () => {
     expect(deriveCompanionPanelStatus({
       enabled: true,
       devices: [],
-    })).toBeNull();
+    }, (key) => key)).toBeNull();
   });
 
   it("does not show a healthy status when the enabled sidecar reports an error", () => {
@@ -52,7 +52,7 @@ describe("companion status refresh", () => {
       enabled: true,
       devices: [],
       error: "sidecar stopped responding",
-    })).toEqual({ label: "Phone access needs attention", good: false });
+    }, (key) => key)).toEqual({ label: "misc.phone.statusAttention", good: false });
   });
 
   it("keeps account refreshes when the local Companion status fails", async () => {

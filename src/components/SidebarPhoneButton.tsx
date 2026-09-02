@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Smartphone } from "lucide-react";
 
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 import type { Action } from "@/state/store";
 import type { SidebarDensity } from "@/lib/sidebar-preferences";
 import { companionBridge, type CompanionState } from "./PhoneSetupFlow";
@@ -162,13 +163,33 @@ export function SidebarPhoneStatusButton({
   status: SidebarPhoneStatus;
   onOpen: () => void;
 }) {
+  const { t } = useT();
+  // deriveSidebarPhoneStatus is a tested pure function, so the localized
+  // label is looked up here from its kind and counts.
+  const label =
+    status.kind === "checking"
+      ? t("misc.sidebarPhone.checking")
+      : status.kind === "unavailable"
+        ? t("misc.sidebarPhone.statusUnavailable")
+        : status.kind === "unpaired"
+          ? t("misc.sidebarPhone.unpaired")
+          : status.kind === "connected"
+            ? t("misc.sidebarPhone.connectedCount", {
+                count: status.connectedCount,
+                total: status.pairedCount,
+              })
+            : status.kind === "disconnected"
+              ? t("misc.sidebarPhone.disconnectedCount", { count: status.pairedCount })
+              : status.kind === "recent"
+                ? t("misc.sidebarPhone.recentCount", { count: status.pairedCount })
+                : t("misc.sidebarPhone.staleCount", { count: status.pairedCount });
   const connected = status.kind === "connected";
   return (
     <button
       type="button"
       onClick={onOpen}
-      title={status.label}
-      aria-label={status.label}
+      title={label}
+      aria-label={label}
       data-phone-status={status.kind}
       data-sidebar-density={density}
       className={cn(

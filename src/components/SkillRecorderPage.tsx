@@ -35,6 +35,7 @@ import {
 import { requestScreenPreview, stopScreenPreview } from "@/lib/screen-preview";
 import { TRANSCRIPTION_STATUS_EVENT } from "@/lib/transcription-status";
 import { useStore } from "@/state/store";
+import { useT } from "@/i18n";
 
 type Phase = "idle" | "starting" | "recording" | "review" | "saving" | "saved";
 
@@ -66,6 +67,7 @@ function blobDataUrl(blob: Blob): Promise<string> {
 }
 
 export function SkillRecorderPage() {
+  const { t } = useT();
   const { dispatch } = useStore();
   const bridge = window.ogb?.skillRecorder;
   const [phase, setPhase] = useState<Phase>("idle");
@@ -134,7 +136,7 @@ export function SkillRecorderPage() {
     });
     const offEnd = bridge.onEnd((info) => {
       if (phaseRef.current === "recording" && info.code !== 0) {
-        setError(info.reason || "The native recorder stopped unexpectedly.");
+        setError(info.reason || t("skills.nativeStopped"));
       }
     });
     return () => { offEvent(); offEnd(); };
@@ -180,16 +182,16 @@ export function SkillRecorderPage() {
   const start = async () => {
     setError("");
     if (!bridge || !window.ogb?.beginScreenPreviewIntent || !navigator.mediaDevices?.getDisplayMedia) {
-      setError("Skill recording requires the OpenMausBot desktop app on macOS.");
+      setError(t("skills.needsDesktopApp"));
       return;
     }
     if (!transcriptionConfigured || !window.ogb.transcription) {
-      setError("Add your AssemblyAI key under Cloud transcription before recording.");
+      setError(t("skills.needsTranscriptionKey"));
       return;
     }
     const nextPermission = await bridge.permissions();
     if (!nextPermission.supported) {
-      setError("Skill recording is currently available in the macOS desktop app.");
+      setError(t("skills.needsMac"));
       return;
     }
     updatePhase("starting");
@@ -201,7 +203,7 @@ export function SkillRecorderPage() {
       if (!selected.ok) throw new Error(selected.message);
       screenRef.current = selected.stream;
       const video = videoRef.current;
-      if (!video) throw new Error("The recorder preview is unavailable");
+      if (!video) throw new Error(t("skills.previewUnavailable"));
       video.srcObject = selected.stream;
       await video.play();
 
@@ -261,7 +263,7 @@ export function SkillRecorderPage() {
     try {
       await bridge?.stop();
       await transcriptionSessionRef.current?.stop().catch(() => {
-        setError("Cloud transcription did not close cleanly; the original audio is still available.");
+        setError(t("skills.transcriptionCloseFailed"));
       });
       transcriptionSessionRef.current = null;
       const capturedTranscript = [
@@ -351,12 +353,12 @@ export function SkillRecorderPage() {
       <video ref={videoRef} muted playsInline className="pointer-events-none absolute size-px opacity-0" />
       <header className="flex h-[60px] shrink-0 items-center justify-between border-b border-hairline px-6">
         <div>
-          <h1 className="text-[15px] font-semibold">Teach a skill</h1>
-          <p className="text-[11px] text-ink-secondary">Show it once. Let every bot repeat it.</p>
+          <h1 className="text-[15px] font-semibold">{t("skills.page")}</h1>
+          <p className="text-[11px] text-ink-secondary">{t("skills.tagline")}</p>
         </div>
         {recording && (
           <button type="button" onClick={() => void stop()} className="flex items-center gap-2 rounded-full bg-danger px-4 py-2 text-[12px] font-semibold text-white shadow-sm">
-            <Square size={11} fill="currentColor" /> Stop · {formatRecordingTime(elapsed)}
+            <Square size={11} fill="currentColor" /> {t("skills.stop")} · {formatRecordingTime(elapsed)}
           </button>
         )}
       </header>
@@ -369,16 +371,16 @@ export function SkillRecorderPage() {
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-accent/15 text-accent-text">
                   <Sparkles size={24} />
                 </div>
-                <h2 className="mt-5 text-[25px] font-semibold tracking-[-0.02em]">Record yourself doing the task</h2>
+                <h2 className="mt-5 text-[25px] font-semibold tracking-[-0.02em]">{t("skills.heroTitle")}</h2>
                 <p className="mt-2 max-w-xl text-[14px] leading-6 text-ink-secondary">
-                  Speak naturally while you work. OpenMausBot lines up your clicks, app changes, screenshots, and narration, then turns the reviewed demonstration into a reusable local skill.
+                  {t("skills.heroBody")}
                 </p>
 
                 <div className="mt-7 grid gap-3 sm:grid-cols-3">
                   {[
-                    { Icon: MousePointer2, label: "Actions", copy: "Clicks, scrolling, app changes" },
-                    { Icon: MonitorUp, label: "Visuals", copy: "A frame at each useful moment" },
-                    { Icon: Mic, label: "Narration", copy: "Live transcript plus original audio" },
+                    { Icon: MousePointer2, label: t("skills.featActions"), copy: t("skills.featActionsCopy") },
+                    { Icon: MonitorUp, label: t("skills.featVisuals"), copy: t("skills.featVisualsCopy") },
+                    { Icon: Mic, label: t("skills.featNarration"), copy: t("skills.featNarrationCopy") },
                   ].map(({ Icon, label, copy }) => (
                     <div key={label} className="rounded-2xl bg-card p-4">
                       <Icon size={18} className="text-ink-secondary" />
@@ -391,7 +393,7 @@ export function SkillRecorderPage() {
                 <div className="mt-6 flex items-start gap-3 rounded-2xl bg-inset px-4 py-3">
                   <EyeOff size={17} className="mt-0.5 shrink-0 text-success" />
                   <p className="text-[12px] leading-5 text-ink-secondary">
-                    Raw keystrokes and clipboard contents are never stored. Screen frames can contain visible text and stay on this computer; microphone audio is streamed to AssemblyAI for transcription. You review everything before creating the skill.
+                    {t("skills.privacyNote")}
                   </p>
                 </div>
 
@@ -399,11 +401,11 @@ export function SkillRecorderPage() {
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent-text"><Cloud size={17} /></span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-[13px] font-medium">
-                      Cloud transcription
-                      {transcriptionConfigured && <span className="text-[10px] font-medium text-success">Saved</span>}
+                      {t("skills.cloudTranscription")}
+                      {transcriptionConfigured && <span className="text-[10px] font-medium text-success">{t("common.saved")}</span>}
                     </div>
                     <p className="mt-0.5 text-[11px] leading-4 text-ink-secondary">
-                      {transcriptionConfigured ? "AssemblyAI is ready for live narration." : "Add an AssemblyAI key in Settings before recording."}
+                      {transcriptionConfigured ? t("skills.transcriptionReady") : t("skills.transcriptionNeedsKey")}
                     </p>
                   </div>
                   <button
@@ -411,14 +413,14 @@ export function SkillRecorderPage() {
                     onClick={() => dispatch({ type: "toggleAppSettings", open: true, section: "connections" })}
                     className="shrink-0 rounded-xl bg-control px-3 py-2 text-[12px] font-medium text-ink hover:bg-raised-hover"
                   >
-                    {transcriptionConfigured ? "Manage" : "Open Settings"}
+                    {transcriptionConfigured ? t("skills.manage") : t("skills.openSettings")}
                   </button>
                 </div>
 
                 <button type="button" disabled={phase === "starting" || !transcriptionConfigured} onClick={() => void start()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-5 py-3.5 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-40">
-                  {phase === "starting" ? <><Circle size={15} className="animate-pulse" /> Getting ready…</> : <><Circle size={14} fill="currentColor" /> Start recording</>}
+                  {phase === "starting" ? <><Circle size={15} className="animate-pulse" /> {t("skills.gettingReady")}</> : <><Circle size={14} fill="currentColor" /> {t("skills.startRecording")}</>}
                 </button>
-                <p className="mt-3 text-center text-[11px] text-ink-secondary">macOS will ask for screen, microphone, and action-recording access the first time.</p>
+                <p className="mt-3 text-center text-[11px] text-ink-secondary">{t("skills.permissionHint")}</p>
               </div>
             </div>
           ) : recording ? (
@@ -427,19 +429,19 @@ export function SkillRecorderPage() {
                 <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-danger/12">
                   <span className="size-4 animate-pulse rounded-full bg-danger" />
                 </div>
-                <h2 className="mt-5 text-[25px] font-semibold">You’re teaching</h2>
-                <p className="mt-2 text-[14px] text-ink-secondary">Move through the task and explain the why as you go.</p>
+                <h2 className="mt-5 text-[25px] font-semibold">{t("skills.teaching")}</h2>
+                <p className="mt-2 text-[14px] text-ink-secondary">{t("skills.teachingHint")}</p>
                 <div className="mx-auto mt-6 max-w-lg rounded-2xl bg-inset p-4 text-left">
                   <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.12em] text-ink-secondary">
-                    <span className="flex items-center gap-2"><Volume2 size={14} /> Live narration · AssemblyAI</span>
-                    <span>{events.length} moments</span>
+                    <span className="flex items-center gap-2"><Volume2 size={14} /> {t("skills.liveNarration")}</span>
+                    <span>{t("skills.moments", { count: events.length })}</span>
                   </div>
                   <p className="mt-3 min-h-12 text-[13px] leading-5 text-ink">
-                    {[transcript, partialTranscript].filter(Boolean).join(" ") || "Start speaking — your transcript will appear here."}
+                    {[transcript, partialTranscript].filter(Boolean).join(" ") || t("skills.transcriptPlaceholder")}
                   </p>
                 </div>
                 <button type="button" onClick={() => void stop()} className="mx-auto mt-7 flex items-center gap-2 rounded-2xl bg-danger px-6 py-3 text-[14px] font-semibold text-white">
-                  <Square size={12} fill="currentColor" /> Stop and review
+                  <Square size={12} fill="currentColor" /> {t("skills.stopAndReview")}
                 </button>
               </div>
             </div>
@@ -447,11 +449,11 @@ export function SkillRecorderPage() {
             <div>
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-success">Recording complete</div>
-                  <h2 className="mt-1 text-[24px] font-semibold tracking-[-0.02em]">Review what the bot learned</h2>
-                  <p className="mt-1 text-[13px] text-ink-secondary">Remove anything private or irrelevant, then name the skill.</p>
+                  <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-success">{t("skills.recordingComplete")}</div>
+                  <h2 className="mt-1 text-[24px] font-semibold tracking-[-0.02em]">{t("skills.reviewTitle")}</h2>
+                  <p className="mt-1 text-[13px] text-ink-secondary">{t("skills.reviewHint")}</p>
                 </div>
-                <button type="button" onClick={() => void discard()} className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-ink-secondary hover:bg-raised"><Trash2 size={15} /> Discard recording</button>
+                <button type="button" onClick={() => void discard()} className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-ink-secondary hover:bg-raised"><Trash2 size={15} /> {t("skills.discardRecording")}</button>
               </div>
 
               <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -466,33 +468,33 @@ export function SkillRecorderPage() {
                     ].filter(Boolean).join(" · ") || formatRecordingTime(event.atMs);
                     return (
                       <article key={event.id} className="group overflow-hidden rounded-2xl border border-hairline bg-panel">
-                        {event.screenshot && <img src={event.screenshot} alt={`Recorded screen at step ${index + 1}`} className="aspect-[16/9] w-full bg-inset object-cover object-top" />}
+                        {event.screenshot && <img src={event.screenshot} alt={t("skills.stepScreenshotAlt", { count: index + 1 })} className="aspect-[16/9] w-full bg-inset object-cover object-top" />}
                         <div className="flex items-center gap-3 px-4 py-3">
                           <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-card text-ink-secondary"><Icon size={15} /></span>
                           <div className="min-w-0 flex-1">
                             <div className="text-[12px] font-medium">{index + 1}. {eventLabel(event)}</div>
                             <div className="truncate text-[10.5px] text-ink-secondary">{context}</div>
                           </div>
-                          <button type="button" aria-label={`Remove step ${index + 1}`} onClick={() => removeEvent(event.id)} className="rounded-lg p-2 text-ink-secondary opacity-60 hover:bg-raised hover:text-danger group-hover:opacity-100"><X size={14} /></button>
+                          <button type="button" aria-label={t("skills.removeStepAria", { count: index + 1 })} onClick={() => removeEvent(event.id)} className="rounded-lg p-2 text-ink-secondary opacity-60 hover:bg-raised hover:text-danger group-hover:opacity-100"><X size={14} /></button>
                         </div>
                       </article>
                     );
                   })}
-                  {!events.length && <div className="rounded-2xl border border-dashed border-hairline p-8 text-center text-[12px] text-ink-secondary">No action steps remain. The narration can still become the skill.</div>}
+                  {!events.length && <div className="rounded-2xl border border-dashed border-hairline p-8 text-center text-[12px] text-ink-secondary">{t("skills.noStepsLeft")}</div>}
                 </section>
 
                 <aside className="h-fit rounded-2xl border border-hairline bg-panel p-5 lg:sticky lg:top-0">
-                  <label className="block text-[11px] font-medium text-ink-secondary" htmlFor="skill-name">Skill name</label>
-                  <input id="skill-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. File an expense report" maxLength={100} className="mt-2 w-full rounded-xl border border-hairline bg-inset px-3 py-2.5 text-[13px] outline-none placeholder:text-ink-secondary/60 focus:border-accent" />
-                  <label className="mt-4 block text-[11px] font-medium text-ink-secondary" htmlFor="skill-description">When should bots use it?</label>
-                  <textarea id="skill-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Use when I ask to submit a company expense…" maxLength={300} rows={4} className="mt-2 w-full resize-none rounded-xl border border-hairline bg-inset px-3 py-2.5 text-[12px] leading-5 outline-none placeholder:text-ink-secondary/60 focus:border-accent" />
+                  <label className="block text-[11px] font-medium text-ink-secondary" htmlFor="skill-name">{t("skills.name")}</label>
+                  <input id="skill-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("skills.nameExample")} maxLength={100} className="mt-2 w-full rounded-xl border border-hairline bg-inset px-3 py-2.5 text-[13px] outline-none placeholder:text-ink-secondary/60 focus:border-accent" />
+                  <label className="mt-4 block text-[11px] font-medium text-ink-secondary" htmlFor="skill-description">{t("skills.usageQuestion")}</label>
+                  <textarea id="skill-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder={t("skills.usageExample")} maxLength={300} rows={4} className="mt-2 w-full resize-none rounded-xl border border-hairline bg-inset px-3 py-2.5 text-[12px] leading-5 outline-none placeholder:text-ink-secondary/60 focus:border-accent" />
                   <div className="mt-4 space-y-2 rounded-xl bg-inset p-3 text-[11px] text-ink-secondary">
-                    <div className="flex items-center justify-between"><span className="flex items-center gap-2"><FileText size={13} /> Steps</span><span>{events.length}</span></div>
-                    <div className="flex items-center justify-between"><span className="flex items-center gap-2"><Mic size={13} /> Narration</span><span>{transcript ? "Included" : "Audio only"}</span></div>
-                    <div className="flex items-center justify-between"><span className="flex items-center gap-2"><ShieldCheck size={13} /> Storage</span><span>Local</span></div>
+                    <div className="flex items-center justify-between"><span className="flex items-center gap-2"><FileText size={13} /> {t("skills.steps")}</span><span>{events.length}</span></div>
+                    <div className="flex items-center justify-between"><span className="flex items-center gap-2"><Mic size={13} /> {t("skills.narration")}</span><span>{transcript ? t("skills.narrationIncluded") : t("skills.audioOnly")}</span></div>
+                    <div className="flex items-center justify-between"><span className="flex items-center gap-2"><ShieldCheck size={13} /> {t("skills.storage")}</span><span>{t("skills.storageLocal")}</span></div>
                   </div>
                   <button type="button" disabled={!name.trim() || phase === "saving"} onClick={() => void save()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-[13px] font-semibold text-white disabled:opacity-40">
-                    <Sparkles size={15} /> {phase === "saving" ? "Creating skill…" : "Create skill"}
+                    <Sparkles size={15} /> {phase === "saving" ? t("skills.creating") : t("skills.createSkill")}
                   </button>
                 </aside>
               </div>
@@ -500,13 +502,13 @@ export function SkillRecorderPage() {
           ) : (
             <div className="mx-auto max-w-xl rounded-3xl border border-hairline bg-panel p-9 text-center">
               <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-success/15 text-success"><Check size={27} /></div>
-              <h2 className="mt-5 text-[25px] font-semibold">Skill ready</h2>
-              <p className="mt-2 text-[13px] leading-5 text-ink-secondary">Bots will load <span className="text-ink">{name}</span> automatically when a request matches it.</p>
+              <h2 className="mt-5 text-[25px] font-semibold">{t("skills.readyTitle")}</h2>
+              <p className="mt-2 text-[13px] leading-5 text-ink-secondary">{t("skills.readyBodyPrefix")}<span className="text-ink">{name}</span>{t("skills.readyBodySuffix")}</p>
               <div className="mt-5 rounded-2xl bg-inset p-4 text-left">
-                <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-secondary">Saved locally</div>
+                <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-secondary">{t("skills.savedLocally")}</div>
                 <div className="mt-1 break-all text-[11px] text-ink">{saved?.path}</div>
               </div>
-              <button type="button" onClick={restart} className="mt-6 rounded-xl bg-raised px-5 py-2.5 text-[13px] font-medium hover:bg-raised-hover">Teach another skill</button>
+              <button type="button" onClick={restart} className="mt-6 rounded-xl bg-raised px-5 py-2.5 text-[13px] font-medium hover:bg-raised-hover">{t("skills.teachAnother")}</button>
             </div>
           )}
 

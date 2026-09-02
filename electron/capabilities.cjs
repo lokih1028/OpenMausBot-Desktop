@@ -34,7 +34,7 @@ function linuxLocalControlSupport(platform, env) {
       available: false,
       session: "unknown",
       reasonCode: "unsupported-platform",
-      message: "Local control is not available on this platform.",
+      message: "此平台不支持本地控制。",
     });
   }
   const session = linuxSession(platform, env);
@@ -45,14 +45,14 @@ function linuxLocalControlSupport(platform, env) {
       session,
       reasonCode: "linux-wayland-seat-safety-blocked",
       message:
-        "Local control is not available on Wayland yet. Sign out and choose Ubuntu on Xorg to use This computer.",
+        "本地控制暂不支持 Wayland。请注销并在登录界面选择 Ubuntu on Xorg，再使用「这台电脑」。",
     });
   }
   return Object.freeze({
     available: false,
     session,
     reasonCode: "headless-session",
-    message: "Local control needs an active Ubuntu Xorg desktop session.",
+    message: "本地控制需要活动的 Ubuntu Xorg 桌面会话。",
   });
 }
 

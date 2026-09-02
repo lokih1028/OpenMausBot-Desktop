@@ -466,9 +466,9 @@ export function roomResponders<T extends { id: string; name: string; hidden?: bo
 }
 
 const onboardingCard = (): OptionCardData => ({
-  title: "What do you mostly want help with?",
-  subtitle: "Pick whatever's closest; we can always expand from there.",
-  options: ["Work & projects", "Writing & research", "Life admin", "A bit of everything"],
+  title: "你最想让机器人帮什么忙？",
+  subtitle: "选一个最接近的就行，之后随时可以扩展。",
+  options: ["工作与项目", "写作与研究", "生活琐事", "什么都来一点"],
 });
 
 /** Messages form a tree (forks appear when a message is edited); the

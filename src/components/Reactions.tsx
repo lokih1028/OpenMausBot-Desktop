@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useStore, type Bot, type Message } from "@/state/store";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 export const REACTION_SET = ["👍", "❤️", "😂", "🎉", "👀"] as const;
 
@@ -18,6 +19,7 @@ const EXTENDED_SET = [
 ] as const;
 
 export function ReactionBar({ threadId, message }: { threadId: string; message: Message }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const [pickerOpen, setPickerOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -54,7 +56,7 @@ export function ReactionBar({ threadId, message }: { threadId: string; message: 
           <button
             key={emoji}
             onClick={() => dispatch({ type: "toggleReaction", threadId, messageId: message.id, emoji })}
-            aria-label={`React ${emoji}`}
+            aria-label={t("misc.reactions.reactAria", { emoji })}
             className="rounded-full px-1 py-0.5 text-[13px] leading-none hover:bg-control"
           >
             {emoji}
@@ -62,9 +64,9 @@ export function ReactionBar({ threadId, message }: { threadId: string; message: 
         ))}
         <button
           onClick={() => setPickerOpen((o) => !o)}
-          aria-label="More reactions"
+          aria-label={t("misc.reactions.more")}
           aria-expanded={pickerOpen}
-          title="More reactions"
+          title={t("misc.reactions.more")}
           className="flex size-[22px] items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink"
         >
           {pickerOpen ? <X size={12} /> : <Plus size={12} />}
@@ -84,7 +86,7 @@ export function ReactionBar({ threadId, message }: { threadId: string; message: 
                   dispatch({ type: "toggleReaction", threadId, messageId: message.id, emoji });
                   setPickerOpen(false);
                 }}
-                aria-label={`React ${emoji}`}
+                aria-label={t("misc.reactions.reactAria", { emoji })}
                 className="rounded-lg px-1 py-1 text-[15px] leading-none hover:bg-control"
               >
                 {emoji}
@@ -108,6 +110,7 @@ export function ReactionChips({
   members?: Bot[];
   align?: "left" | "right";
 }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const reactions = message.reactions ?? [];
   if (!reactions.length) return null;
@@ -115,7 +118,7 @@ export function ReactionChips({
   const grouped = new Map<string, string[]>();
   for (const r of reactions) grouped.set(r.emoji, [...(grouped.get(r.emoji) ?? []), r.by]);
   const nameOf = (by: string) =>
-    by === "user" ? "You" : (members?.find((b) => b.id === by)?.name ?? "Bot");
+    by === "user" ? t("common.you") : (members?.find((b) => b.id === by)?.name ?? t("misc.reactions.aBot"));
   return (
     <div className={cn("mt-1 flex flex-wrap gap-1", align === "right" ? "justify-end" : "justify-start")}>
       {[...grouped].map(([emoji, bys]) => (

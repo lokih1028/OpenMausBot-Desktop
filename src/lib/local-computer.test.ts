@@ -53,7 +53,7 @@ describe("local computer UI eligibility", () => {
   });
 
   it("states that Linux Auto never selects this computer", () => {
-    expect(linuxAutoDescription()).toContain("otherwise computer use stays off");
+    expect(linuxAutoDescription()).toContain("否则保持电脑操作关闭");
     expect(
       autoSelectsLocalComputer({
         platform: "linux",
@@ -77,7 +77,7 @@ describe("local computer UI eligibility", () => {
     expect(
       localComputerDisabledReason({ capabilities, providerSupportsLocal: true }),
     ).toBe(
-      "Local computer control is not available on Wayland yet. Sign out and choose Ubuntu on Xorg to use This computer.",
+      "本地控制暂不支持 Wayland。请注销并在登录界面选择 Ubuntu on Xorg，再使用「这台电脑」。",
     );
   });
 

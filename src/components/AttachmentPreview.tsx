@@ -7,6 +7,7 @@ import { Download, ImageOff, Maximize2, X } from "lucide-react";
 
 import { attachmentBasename, attachmentImageUrl } from "@/lib/composer-attachments";
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 
 export interface PreviewImage {
   src: string;
@@ -20,6 +21,7 @@ export function previewImage(path: string): PreviewImage | null {
 }
 
 export function AttachmentPreviewDialog({ image, onClose }: { image: PreviewImage; onClose: () => void }) {
+  const { t } = useT();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   const [failed, setFailed] = useState(false);
@@ -74,29 +76,29 @@ export function AttachmentPreviewDialog({ image, onClose }: { image: PreviewImag
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`Preview ${image.name}`}
+        aria-label={t("misc.attachments.previewOf", { name: image.name })}
         tabIndex={-1}
         className="animate-pop-in flex h-full max-h-[900px] w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/70 shadow-2xl outline-none"
       >
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-black/45 px-4 py-3">
           <div className="min-w-0">
             <div className="truncate text-[13px] font-medium text-white">{image.name}</div>
-            <div className="text-[10.5px] text-white/50">Saved locally by OpenMausBot</div>
+            <div className="text-[10.5px] text-white/50">{t("misc.attachments.savedLocallyNote")}</div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <a
               href={image.src}
               download={image.name}
               className="flex size-9 items-center justify-center rounded-lg text-white/65 hover:bg-white/10 hover:text-white"
-              aria-label={`Download ${image.name}`}
-              title="Download"
+              aria-label={t("misc.attachments.downloadOf", { name: image.name })}
+              title={t("misc.attachments.download")}
             >
               <Download size={17} />
             </a>
             <button
               onClick={onClose}
               className="flex size-9 items-center justify-center rounded-lg text-white/65 hover:bg-white/10 hover:text-white"
-              aria-label="Close image preview"
+              aria-label={t("misc.attachments.closePreview")}
             >
               <X size={19} />
             </button>
@@ -106,7 +108,7 @@ export function AttachmentPreviewDialog({ image, onClose }: { image: PreviewImag
           {failed ? (
             <div className="flex flex-col items-center gap-3 text-white/60" role="status">
               <ImageOff size={34} />
-              <span className="text-[13px]">This attachment is no longer available.</span>
+              <span className="text-[13px]">{t("misc.attachments.gone")}</span>
             </div>
           ) : (
             <img
@@ -124,14 +126,15 @@ export function AttachmentPreviewDialog({ image, onClose }: { image: PreviewImag
 }
 
 function Thumbnail({ image, onPreview }: { image: PreviewImage; onPreview: () => void }) {
+  const { t } = useT();
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return (
     <button
       onClick={onPreview}
       className="group/image relative block max-w-[260px] overflow-hidden rounded-lg border border-hairline/40 bg-inset text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-      aria-label={`Preview attached image ${image.name}`}
-      title={`Preview ${image.name}`}
+      aria-label={t("misc.attachments.previewAttachedOf", { name: image.name })}
+      title={t("misc.attachments.previewOf", { name: image.name })}
     >
       <img
         src={image.src}

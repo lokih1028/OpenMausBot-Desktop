@@ -3,8 +3,9 @@
 // so the wrapper carries data-mid and its last child — the bubble/chip,
 // after any day separator — is what gets scrolled and highlighted.
 import { useEffect } from "react";
-import { api, useStore, type Action, type AppState } from "@/state/store";
+import { api, useStore, type Action, AppState } from "@/state/store";
 import type { SearchHit } from "@/lib/search-hit";
+import { readLocale, translate } from "@/i18n/catalog";
 
 const FLASH_CLASSES = ["ring-2", "ring-accent/70", "rounded-2xl", "transition-shadow"];
 
@@ -17,7 +18,7 @@ export async function landOnSearchHit(
   const ownerId = hit.botId ?? hit.groupId;
   const bot = hit.botId ? state.bots.find((candidate) => candidate.id === hit.botId) : undefined;
   const group = hit.groupId ? state.groups.find((candidate) => candidate.id === hit.groupId) : undefined;
-  if (!ownerId || (!bot && !group)) throw new Error("That conversation is no longer available.");
+  if (!ownerId || (!bot && !group)) throw new Error(translate(readLocale(), "lib.conversationGone"));
 
   dispatch({ type: "select", id: ownerId });
   if (bot && bot.threadId !== hit.threadId) {

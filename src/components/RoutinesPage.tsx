@@ -24,9 +24,11 @@ import { cn } from "@/lib/cn";
 import { MAUS_COLORS, type MausState } from "@/lib/mascot";
 import type { Routine, RoutineInput, RoutineRun, RoutineRunOn, RoutineRunStatus } from "@/lib/routines";
 import { api, useStore, type Bot } from "@/state/store";
+import { useT, type Translate } from "@/i18n";
 
 const HOUR_HEIGHT = 68;
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+/** en catalog keys are indexed by weekday number. */
+const DAY_NAMES_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type CalendarItem = {
   id: string;
@@ -79,18 +81,18 @@ function niceTime(at: number) {
   return new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function scheduleLabel(routine: Routine) {
+function scheduleLabel(routine: Routine, t: Translate) {
   if (routine.schedule.type === "once") {
     return `${niceDate(routine.schedule.at)}, ${niceTime(routine.schedule.at)}`;
   }
   const days = routine.schedule.weekdays;
   const dayLabel =
     days.length === 7
-      ? "Every day"
+      ? t("tasks.everyDay")
       : days.join(",") === "1,2,3,4,5"
-        ? "Weekdays"
-        : days.map((day) => DAY_NAMES[day]).join(", ");
-  return `${dayLabel} at ${niceTime(atLocalTime(Date.now(), routine.schedule.time))}`;
+        ? t("tasks.weekdaysWeekdays")
+        : days.map((day) => t(`tasks.weekday${DAY_NAMES_EN[day]}`)).join(", ");
+  return t("tasks.daysAtTime", { days: dayLabel, time: niceTime(atLocalTime(Date.now(), routine.schedule.time)) });
 }
 
 function canToggleRoutine(routine: Routine) {
@@ -179,9 +181,10 @@ function projectedItems(routines: Routine[], runs: RoutineRun[], from: number, t
 }
 
 function RoutineCard({ item, bot, compact, onOpen }: { item: CalendarItem; bot: Bot; compact: boolean; onOpen: () => void }) {
+  const { t } = useT();
   const status = item.run?.status;
   const color = MAUS_COLORS[bot.color];
-  const title = item.routine?.name ?? item.run?.routineName ?? "Routine";
+  const title = item.routine?.name ?? item.run?.routineName ?? t("tasks.defaultName");
   const animated = status === "running" || status === "waiting";
   return (
     <button
@@ -215,10 +218,10 @@ function RoutineCard({ item, bot, compact, onOpen }: { item: CalendarItem; bot: 
             {animated && <Loader2 size={10} className="animate-spin" />}
             <span>{niceTime(item.at)}</span>
             <span>·</span>
-            {item.run?.triggerSource === "webhook" && <><Webhook size={10} /><span>Webhook</span><span>·</span></>}
+            {item.run?.triggerSource === "webhook" && <><Webhook size={10} /><span>{t("tasks.webhookLabel")}</span><span>·</span></>}
             <span className="truncate">
-              {status ? status.replace("waiting", "needs you") : bot.name}
-              {(item.routine?.runOn ?? item.run?.runOn) === "cloud" ? " · VM" : ""}
+              {status ? t(status === "waiting" ? "tasks.statusNeedsYou" : `tasks.status${status[0].toUpperCase()}${status.slice(1)}`) : bot.name}
+              {(item.routine?.runOn ?? item.run?.runOn) === "cloud" ? ` · ${t("tasks.vmShort")}` : ""}
             </span>
           </div>
         </div>
@@ -241,6 +244,7 @@ function CalendarGrid({
   bots: Bot[];
   onOpen: (item: CalendarItem) => void;
 }) {
+  const { t } = useT();
   const scrollRef = useRef<HTMLDivElement>(null);
   const today = startOfDay(Date.now());
   const starts = Array.from({ length: days }, (_, index) => addDays(anchor, index));
@@ -260,7 +264,7 @@ function CalendarGrid({
           const date = new Date(start);
           return (
             <div key={start} className="border-b border-r border-hairline/40 px-3 py-2.5 text-center last:border-r-0">
-              <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-secondary">{DAY_NAMES[date.getDay()]}</div>
+              <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-secondary">{t(`tasks.weekday${DAY_NAMES_EN[date.getDay()]}`)}</div>
               <div className={cn("mx-auto mt-1 flex size-7 items-center justify-center rounded-full text-[14px] font-semibold", isToday ? "bg-accent text-white" : "text-ink")}>{date.getDate()}</div>
             </div>
           );
@@ -314,6 +318,7 @@ export function RoutineEditor({
   defaultRunOn?: RoutineRunOn;
   onClose: () => void;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [name, setName] = useState(routine?.name ?? "");
   const [prompt, setPrompt] = useState(routine?.prompt ?? "");
@@ -367,18 +372,18 @@ export function RoutineEditor({
       <div className="max-h-[90vh] w-full max-w-[620px] overflow-y-auto rounded-2xl border border-hairline/60 bg-panel shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-hairline/40 bg-panel/95 px-5 py-4 backdrop-blur">
           <div>
-            <div className="text-[17px] font-semibold text-ink">{routine ? "Edit routine" : "New routine"}</div>
-            <div className="mt-0.5 text-[12px] text-ink-secondary">Each run starts a fresh task for this agent. No cron syntax required.</div>
+            <div className="text-[17px] font-semibold text-ink">{routine ? t("tasks.editRoutine") : t("tasks.newRoutine")}</div>
+            <div className="mt-0.5 text-[12px] text-ink-secondary">{t("tasks.editorHint")}</div>
           </div>
           <button onClick={onClose} className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink"><X size={18} /></button>
         </div>
         <div className="space-y-5 p-5">
           <label className="block">
-            <span className="mb-1.5 block text-[12px] font-medium text-ink-secondary">Routine name</span>
-            <input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder="Morning research brief" className="w-full rounded-xl border border-hairline/60 bg-inset px-3.5 py-2.5 text-[14px] text-ink outline-none placeholder:text-ink-secondary/60 focus:border-accent/70" />
+            <span className="mb-1.5 block text-[12px] font-medium text-ink-secondary">{t("tasks.nameLabel")}</span>
+            <input autoFocus value={name} onChange={(event) => setName(event.target.value)} placeholder={t("tasks.nameExamplePlaceholder")} className="w-full rounded-xl border border-hairline/60 bg-inset px-3.5 py-2.5 text-[14px] text-ink outline-none placeholder:text-ink-secondary/60 focus:border-accent/70" />
           </label>
           <div>
-            <div className="mb-2 text-[12px] font-medium text-ink-secondary">Where does it run?</div>
+            <div className="mb-2 text-[12px] font-medium text-ink-secondary">{t("tasks.whereRuns")}</div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -388,8 +393,8 @@ export function RoutineEditor({
                   runOn === "maus" ? "border-accent/70 bg-accent/10" : "border-hairline/50 bg-inset hover:bg-raised/60",
                 )}
               >
-                <div className="flex items-center gap-2 text-[13px] font-medium text-ink"><Laptop size={15} />This computer</div>
-                <div className="mt-1 text-[11px] leading-relaxed text-ink-secondary">Uses this MAUS's selected model and computer setting.</div>
+                <div className="flex items-center gap-2 text-[13px] font-medium text-ink"><Laptop size={15} />{t("tasks.runLocal")}</div>
+                <div className="mt-1 text-[11px] leading-relaxed text-ink-secondary">{t("tasks.runLocalHint")}</div>
               </button>
               <button
                 type="button"
@@ -400,39 +405,39 @@ export function RoutineEditor({
                   runOn === "cloud" ? "border-accent/70 bg-accent/10" : "border-hairline/50 bg-inset hover:bg-raised/60",
                 )}
               >
-                <div className="flex items-center gap-2 text-[13px] font-medium text-ink"><Cloud size={15} />Cloud VM</div>
-                <div className="mt-1 text-[11px] leading-relaxed text-ink-secondary">Runs the MAUS and its tools inside its Box virtual machine.</div>
+                <div className="flex items-center gap-2 text-[13px] font-medium text-ink"><Cloud size={15} />{t("tasks.runCloud")}</div>
+                <div className="mt-1 text-[11px] leading-relaxed text-ink-secondary">{t("tasks.runCloudHint")}</div>
               </button>
             </div>
             {runOn === "cloud" && (
               <div className={cn("mt-2 rounded-lg px-3 py-2 text-[11.5px] leading-relaxed", cloudReady ? "bg-accent/10 text-ink-secondary" : "border border-warning/25 bg-warning/10 text-warning")}>
                 {cloudReady
-                  ? "The VM wakes automatically for each run. Keep OpenMausBot running so its scheduler can launch the job."
-                  : "Cloud VM needs a working Box API key in App Settings before this routine can run."}
+                  ? t("tasks.cloudReadyHint")
+                  : t("tasks.cloudNeedsBox")}
               </div>
             )}
           </div>
           <div>
-            <div className="mb-2 text-[12px] font-medium text-ink-secondary">Who does it?</div>
+            <div className="mb-2 text-[12px] font-medium text-ink-secondary">{t("tasks.whoRuns")}</div>
             <div className={cn("grid gap-2", lockedBotId ? "grid-cols-1" : "grid-cols-2 sm:grid-cols-3")}>
               {bots.map((bot) => (
                 <button key={bot.id} type="button" disabled={Boolean(lockedBotId)} onClick={() => setBotId(bot.id)} className={cn("flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left", botId === bot.id ? "border-accent/70 bg-accent/10" : "border-hairline/50 bg-inset hover:bg-raised/60")}>
                   <BotAvatar bot={bot} state={botId === bot.id ? "happy" : "idle"} size={38} animated={false} />
                   <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{bot.name}</span>
-                  {lockedBotId && <span className="text-[11px] text-ink-secondary">Assigned from Computer</span>}
+                  {lockedBotId && <span className="text-[11px] text-ink-secondary">{t("tasks.assignedFromComputer")}</span>}
                 </button>
               ))}
             </div>
           </div>
           <label className="block">
-            <span className="mb-1.5 block text-[12px] font-medium text-ink-secondary">What should this MAUS do?</span>
-            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={6} placeholder="Check the latest project activity, summarize what changed, and call out anything that needs my attention…" className="w-full resize-y rounded-xl border border-hairline/60 bg-inset px-3.5 py-3 text-[14px] leading-relaxed text-ink outline-none placeholder:text-ink-secondary/60 focus:border-accent/70" />
+            <span className="mb-1.5 block text-[12px] font-medium text-ink-secondary">{t("tasks.promptQuestion")}</span>
+            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={6} placeholder={t("tasks.promptEditorPlaceholder")} className="w-full resize-y rounded-xl border border-hairline/60 bg-inset px-3.5 py-3 text-[14px] leading-relaxed text-ink outline-none placeholder:text-ink-secondary/60 focus:border-accent/70" />
           </label>
           <div>
-            <div className="mb-2 text-[12px] font-medium text-ink-secondary">When?</div>
+            <div className="mb-2 text-[12px] font-medium text-ink-secondary">{t("tasks.whenQuestion")}</div>
             <div className="mb-3 inline-flex rounded-xl bg-inset p-1">
               {(["once", "daily"] as const).map((value) => (
-                <button key={value} onClick={() => setKind(value)} className={cn("rounded-lg px-4 py-1.5 text-[13px] capitalize", kind === value ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}>{value === "daily" ? "Repeating" : "Once"}</button>
+                <button key={value} onClick={() => setKind(value)} className={cn("rounded-lg px-4 py-1.5 text-[13px] capitalize", kind === value ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}>{value === "daily" ? t("tasks.kindRepeating") : t("tasks.scheduleOnce")}</button>
               ))}
             </div>
             {kind === "once" ? (
@@ -441,25 +446,25 @@ export function RoutineEditor({
               <div className="space-y-3">
                 <input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="rounded-xl border border-hairline/60 bg-inset px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent/70 [color-scheme:dark]" />
                 <div className="flex flex-wrap gap-1.5">
-                  {DAY_NAMES.map((label, day) => (
-                    <button key={label} type="button" onClick={() => setWeekdays((current) => current.includes(day) ? (current.length === 1 ? current : current.filter((value) => value !== day)) : [...current, day].sort())} className={cn("size-10 rounded-xl border text-[11px] font-medium", weekdays.includes(day) ? "border-accent bg-accent text-white" : "border-hairline/50 bg-inset text-ink-secondary hover:text-ink")}>{label.slice(0, 2)}</button>
+                  {DAY_NAMES_EN.map((label, day) => (
+                    <button key={label} type="button" onClick={() => setWeekdays((current) => current.includes(day) ? (current.length === 1 ? current : current.filter((value) => value !== day)) : [...current, day].sort())} className={cn("size-10 rounded-xl border text-[11px] font-medium", weekdays.includes(day) ? "border-accent bg-accent text-white" : "border-hairline/50 bg-inset text-ink-secondary hover:text-ink")}>{t(`tasks.weekday${label}`).slice(0, 2)}</button>
                   ))}
                 </div>
               </div>
             )}
           </div>
           <label className="block">
-            <span className="mb-1.5 block text-[12px] font-medium text-ink-secondary">Calendar block</span>
+            <span className="mb-1.5 block text-[12px] font-medium text-ink-secondary">{t("tasks.durationLabel")}</span>
             <select value={durationMinutes} onChange={(event) => setDurationMinutes(Number(event.target.value))} className="rounded-xl border border-hairline/60 bg-inset px-3.5 py-2.5 text-[14px] text-ink outline-none focus:border-accent/70">
-              {[15, 30, 45, 60, 90, 120].map((minutes) => <option key={minutes} value={minutes}>{minutes < 60 ? `${minutes} minutes` : `${minutes / 60} ${minutes === 60 ? "hour" : "hours"}`}</option>)}
+              {[15, 30, 45, 60, 90, 120].map((minutes) => <option key={minutes} value={minutes}>{minutes < 60 ? t("tasks.minutesCount", { count: minutes }) : `${minutes / 60} ${minutes === 60 ? t("tasks.hour") : t("tasks.hours")}`}</option>)}
             </select>
           </label>
           {error && <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-[13px] text-danger"><CircleAlert size={16} className="mt-0.5 shrink-0" />{error}</div>}
         </div>
         <div className="sticky bottom-0 flex justify-end gap-2 border-t border-hairline/40 bg-panel/95 px-5 py-4 backdrop-blur">
-          <button onClick={onClose} className="rounded-xl px-4 py-2 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink">Cancel</button>
+          <button onClick={onClose} className="rounded-xl px-4 py-2 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink">{t("common.cancel")}</button>
           <button onClick={save} disabled={saving || !name.trim() || !prompt.trim() || !botId} className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-[13px] font-medium text-white hover:brightness-110 disabled:opacity-40">
-            {saving && <Loader2 size={14} className="animate-spin" />}{routine ? "Save changes" : "Create routine"}
+            {saving && <Loader2 size={14} className="animate-spin" />}{routine ? t("tasks.saveChanges") : t("tasks.createRoutine")}
           </button>
         </div>
       </div>
@@ -468,12 +473,13 @@ export function RoutineEditor({
 }
 
 function RoutineDetails({ item, bot, onClose, onEdit }: { item: CalendarItem; bot: Bot; onClose: () => void; onEdit: (routine: Routine) => void }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const routine = item.routine;
   const run = item.run;
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
-  const title = routine?.name ?? run?.routineName ?? "Routine";
+  const title = routine?.name ?? run?.routineName ?? t("tasks.defaultName");
   const webhookParts = run?.triggerSource === "webhook" ? webhookPromptParts(run.prompt) : null;
   const visibleInstructions = webhookParts?.instructions ?? routine?.prompt ?? run?.prompt;
 
@@ -504,7 +510,7 @@ function RoutineDetails({ item, bot, onClose, onEdit }: { item: CalendarItem; bo
               <div className={cn("mt-2 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-medium capitalize", run ? statusTone(run.status) : "text-white/70")}>
                 {run?.status === "running" && <Loader2 size={11} className="animate-spin" />}
                 {run?.status === "completed" && <CheckCircle2 size={11} />}
-                {run ? run.status.replace("waiting", "needs you") : "scheduled"}
+                {run ? t(run.status === "waiting" ? "tasks.statusNeedsYou" : `tasks.status${run.status[0].toUpperCase()}${run.status.slice(1)}`) : t("tasks.statusScheduled")}
               </div>
             </div>
           </div>
@@ -512,33 +518,33 @@ function RoutineDetails({ item, bot, onClose, onEdit }: { item: CalendarItem; bo
         <div className="max-h-[55vh] space-y-4 overflow-y-auto p-5">
           {routine && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">Schedule</div><div className="mt-1 text-[13px] text-ink">{scheduleLabel(routine)}</div></div>
-              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">Runs on</div><div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink">{routine.runOn === "cloud" ? <Cloud size={13} /> : <Laptop size={13} />}{routine.runOn === "cloud" ? "Cloud VM" : "MAUS setup"}</div></div>
-              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">Duration</div><div className="mt-1 text-[13px] text-ink">{routine.durationMinutes} minutes</div></div>
+              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">{t("tasks.scheduleLabel")}</div><div className="mt-1 text-[13px] text-ink">{scheduleLabel(routine, t)}</div></div>
+              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">{t("tasks.runsOn")}</div><div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink">{routine.runOn === "cloud" ? <Cloud size={13} /> : <Laptop size={13} />}{routine.runOn === "cloud" ? t("tasks.runsOnCloud") : t("tasks.runsOnLocal")}</div></div>
+              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">{t("tasks.duration")}</div><div className="mt-1 text-[13px] text-ink">{t("tasks.minutesCount", { count: routine.durationMinutes })}</div></div>
             </div>
           )}
           {run?.triggerSource === "webhook" && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">Triggered by</div><div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink"><Webhook size={13} />Webhook</div></div>
-              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">Runs on</div><div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink">{run.runOn === "cloud" ? <Cloud size={13} /> : <Laptop size={13} />}{run.runOn === "cloud" ? "Cloud VM" : "MAUS setup"}</div></div>
-              {run.deliveryId && <div className="col-span-2 rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">Delivery ID</div><div className="mt-1 truncate font-mono text-[11.5px] text-ink">{run.deliveryId}</div></div>}
+              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">{t("tasks.triggeredBy")}</div><div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink"><Webhook size={13} />{t("tasks.webhookLabel")}</div></div>
+              <div className="rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">{t("tasks.runsOn")}</div><div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink">{run.runOn === "cloud" ? <Cloud size={13} /> : <Laptop size={13} />}{run.runOn === "cloud" ? t("tasks.runsOnCloud") : t("tasks.runsOnLocal")}</div></div>
+              {run.deliveryId && <div className="col-span-2 rounded-xl bg-inset p-3"><div className="text-[10px] uppercase tracking-wider text-ink-secondary">{t("tasks.deliveryId")}</div><div className="mt-1 truncate font-mono text-[11.5px] text-ink">{run.deliveryId}</div></div>}
             </div>
           )}
-          {visibleInstructions && <div><div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-secondary">Instructions</div><div className="whitespace-pre-wrap rounded-xl border border-hairline/40 bg-inset px-3.5 py-3 text-[13px] leading-relaxed text-ink">{visibleInstructions}</div></div>}
-          {webhookParts?.eventData && <div><div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-secondary">Webhook event data</div><pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-xl border border-accent/15 bg-accent/5 px-3.5 py-3 font-mono text-[11.5px] leading-relaxed text-ink-secondary">{webhookParts.eventData}</pre></div>}
-          {run?.output && <div><div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-secondary">Last output</div><div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-xl border border-success/20 bg-success/5 px-3.5 py-3 text-[13px] leading-relaxed text-ink">{run.output}</div></div>}
+          {visibleInstructions && <div><div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-secondary">{t("tasks.instructionsLabel")}</div><div className="whitespace-pre-wrap rounded-xl border border-hairline/40 bg-inset px-3.5 py-3 text-[13px] leading-relaxed text-ink">{visibleInstructions}</div></div>}
+          {webhookParts?.eventData && <div><div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-secondary">{t("tasks.webhookEventData")}</div><pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-xl border border-accent/15 bg-accent/5 px-3.5 py-3 font-mono text-[11.5px] leading-relaxed text-ink-secondary">{webhookParts.eventData}</pre></div>}
+          {run?.output && <div><div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-ink-secondary">{t("tasks.lastOutput")}</div><div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-xl border border-success/20 bg-success/5 px-3.5 py-3 text-[13px] leading-relaxed text-ink">{run.output}</div></div>}
           {run?.error && <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-3 text-[13px] text-danger"><CircleAlert size={16} className="mt-0.5 shrink-0" /><span>{run.error}</span></div>}
           {error && <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-3 text-[13px] text-danger"><CircleAlert size={16} className="mt-0.5 shrink-0" /><span>{error}</span></div>}
-          {run?.status === "waiting" && <div className="rounded-xl border border-warning/30 bg-warning/10 px-3.5 py-3 text-[13px] text-warning">This MAUS needs your answer. Open its task to continue the run.</div>}
+          {run?.status === "waiting" && <div className="rounded-xl border border-warning/30 bg-warning/10 px-3.5 py-3 text-[13px] text-warning">{t("tasks.needsYourAnswer")}</div>}
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t border-hairline/40 px-5 py-4">
-          {routine && <button disabled={working} onClick={() => void invoke(`/api/routines/${routine.id}/run`)} className="flex items-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-medium text-white hover:brightness-110 disabled:opacity-40"><Play size={14} />Run now</button>}
-          {run?.threadId && <button onClick={() => { dispatch({ type: "select", id: bot.id }); dispatch({ type: "switchTask", botId: bot.id, threadId: run.threadId! }); onClose(); }} className="flex items-center gap-2 rounded-xl bg-raised px-3.5 py-2 text-[13px] text-ink hover:bg-raised-hover"><ExternalLink size={14} />Open task</button>}
-          {run && ["queued", "running", "waiting"].includes(run.status) && <button disabled={working} onClick={() => void invoke(`/api/routine-runs/${run.id}/cancel`)} className="flex items-center gap-2 rounded-xl bg-raised px-3.5 py-2 text-[13px] text-ink hover:bg-raised-hover disabled:opacity-40"><X size={14} />Cancel run</button>}
+          {routine && <button disabled={working} onClick={() => void invoke(`/api/routines/${routine.id}/run`)} className="flex items-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-medium text-white hover:brightness-110 disabled:opacity-40"><Play size={14} />{t("tasks.runNow")}</button>}
+          {run?.threadId && <button onClick={() => { dispatch({ type: "select", id: bot.id }); dispatch({ type: "switchTask", botId: bot.id, threadId: run.threadId! }); onClose(); }} className="flex items-center gap-2 rounded-xl bg-raised px-3.5 py-2 text-[13px] text-ink hover:bg-raised-hover"><ExternalLink size={14} />{t("tasks.openTask")}</button>}
+          {run && ["queued", "running", "waiting"].includes(run.status) && <button disabled={working} onClick={() => void invoke(`/api/routine-runs/${run.id}/cancel`)} className="flex items-center gap-2 rounded-xl bg-raised px-3.5 py-2 text-[13px] text-ink hover:bg-raised-hover disabled:opacity-40"><X size={14} />{t("tasks.cancelRun")}</button>}
           <div className="flex-1" />
-          {routine && canToggleRoutine(routine) && <button disabled={working} onClick={async () => { setWorking(true); setError(""); try { const response = await api(`/api/routines/${routine.id}`, { method: "PATCH", body: JSON.stringify({ enabled: !routine.enabled }) }); dispatch({ type: "routinePatched", routine: response.routine }); } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); } finally { setWorking(false); } }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-40">{routine.enabled ? <Pause size={14} /> : <Play size={14} />}{routine.enabled ? "Pause" : "Resume"}</button>}
-          {routine && <button onClick={() => onEdit(routine)} className="rounded-xl px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink">Edit</button>}
-          {routine && <button onClick={() => { if (!window.confirm(`Delete “${routine.name}”? Its past run receipts will stay in the calendar.`)) return; dispatch({ type: "deleteRoutine", routineId: routine.id }); onClose(); }} className="rounded-xl p-2 text-ink-secondary hover:bg-danger/10 hover:text-danger" title="Delete routine"><Trash2 size={16} /></button>}
+          {routine && canToggleRoutine(routine) && <button disabled={working} onClick={async () => { setWorking(true); setError(""); try { const response = await api(`/api/routines/${routine.id}`, { method: "PATCH", body: JSON.stringify({ enabled: !routine.enabled }) }); dispatch({ type: "routinePatched", routine: response.routine }); } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); } finally { setWorking(false); } }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-40">{routine.enabled ? <Pause size={14} /> : <Play size={14} />}{routine.enabled ? t("tasks.pause") : t("tasks.resume")}</button>}
+          {routine && <button onClick={() => onEdit(routine)} className="rounded-xl px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised hover:text-ink">{t("common.edit")}</button>}
+          {routine && <button onClick={() => { if (!window.confirm(t("tasks.deleteReceiptsConfirm", { name: routine.name }))) return; dispatch({ type: "deleteRoutine", routineId: routine.id }); onClose(); }} className="rounded-xl p-2 text-ink-secondary hover:bg-danger/10 hover:text-danger" title={t("tasks.delete")}><Trash2 size={16} /></button>}
         </div>
       </div>
     </div>
@@ -546,12 +552,13 @@ function RoutineDetails({ item, bot, onClose, onEdit }: { item: CalendarItem; bo
 }
 
 function PausedRoutines({ routines, bots, onClose, onEdit }: { routines: Routine[]; bots: Bot[]; onClose: () => void; onEdit: (routine: Routine) => void }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <div className="w-full max-w-[560px] overflow-hidden rounded-2xl border border-hairline/60 bg-panel shadow-2xl">
         <div className="flex items-center justify-between border-b border-hairline/40 px-5 py-4">
-          <div><div className="text-[17px] font-semibold text-ink">Paused routines</div><div className="mt-0.5 text-[12px] text-ink-secondary">They keep their history and will not create new runs.</div></div>
+          <div><div className="text-[17px] font-semibold text-ink">{t("tasks.pausedTitle")}</div><div className="mt-0.5 text-[12px] text-ink-secondary">{t("tasks.pausedHint")}</div></div>
           <button onClick={onClose} className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink"><X size={18} /></button>
         </div>
         <div className="max-h-[60vh] space-y-2 overflow-y-auto p-4">
@@ -560,10 +567,10 @@ function PausedRoutines({ routines, bots, onClose, onEdit }: { routines: Routine
             return (
               <div key={routine.id} className="flex items-center gap-3 rounded-xl border border-hairline/40 bg-inset p-3">
                 {bot ? <BotAvatar bot={bot} state="sleeping" size={44} animated={false} label={bot.name} /> : <div className="flex size-11 items-center justify-center rounded-xl bg-raised text-ink-secondary"><CalendarClock size={20} /></div>}
-                <div className="min-w-0 flex-1"><div className="truncate text-[14px] font-semibold text-ink">{routine.name}</div><div className="mt-0.5 truncate text-[11.5px] text-ink-secondary">{bot?.name ?? "Deleted MAUS"} · {scheduleLabel(routine)}</div></div>
-                {bot && <button onClick={() => dispatch({ type: "updateRoutine", routineId: routine.id, patch: { enabled: true } })} className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white hover:brightness-110"><Play size={12} />Resume</button>}
-                <button onClick={() => onEdit(routine)} className="rounded-lg px-2 py-1.5 text-[12px] text-ink-secondary hover:bg-raised hover:text-ink">Edit</button>
-                <button onClick={() => { if (!window.confirm(`Delete “${routine.name}”?`)) return; dispatch({ type: "deleteRoutine", routineId: routine.id }); }} className="rounded-lg p-2 text-ink-secondary hover:bg-danger/10 hover:text-danger" title="Delete routine"><Trash2 size={15} /></button>
+                <div className="min-w-0 flex-1"><div className="truncate text-[14px] font-semibold text-ink">{routine.name}</div><div className="mt-0.5 truncate text-[11.5px] text-ink-secondary">{bot?.name ?? t("tasks.deletedBot")} · {scheduleLabel(routine, t)}</div></div>
+                {bot && <button onClick={() => dispatch({ type: "updateRoutine", routineId: routine.id, patch: { enabled: true } })} className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12px] font-medium text-white hover:brightness-110"><Play size={12} />{t("tasks.resume")}</button>}
+                <button onClick={() => onEdit(routine)} className="rounded-lg px-2 py-1.5 text-[12px] text-ink-secondary hover:bg-raised hover:text-ink">{t("common.edit")}</button>
+                <button onClick={() => { if (!window.confirm(t("tasks.deleteNameConfirm", { name: routine.name }))) return; dispatch({ type: "deleteRoutine", routineId: routine.id }); }} className="rounded-lg p-2 text-ink-secondary hover:bg-danger/10 hover:text-danger" title={t("tasks.delete")}><Trash2 size={15} /></button>
               </div>
             );
           })}
@@ -574,6 +581,7 @@ function PausedRoutines({ routines, bots, onClose, onEdit }: { routines: Routine
 }
 
 export function RoutinesPage() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [section, setSection] = useState<"calendar" | "webhooks">("calendar");
   const [viewDays, setViewDays] = useState<1 | 3 | 7>(7);
@@ -626,42 +634,42 @@ export function RoutinesPage() {
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2.5">{section === "calendar" ? <CalendarDays size={21} className="text-accent" /> : <Webhook size={21} className="text-accent" />}<h1 className="text-[20px] font-semibold tracking-tight text-ink">Tasks &amp; routines</h1></div>
-            <p className="mt-1 text-[12.5px] text-ink-secondary">{section === "calendar" ? "Routines start fresh agent tasks on a schedule." : "Webhooks start fresh agent tasks when an event arrives."}</p>
+            <div className="flex items-center gap-2.5">{section === "calendar" ? <CalendarDays size={21} className="text-accent" /> : <Webhook size={21} className="text-accent" />}<h1 className="text-[20px] font-semibold tracking-tight text-ink">{t("tasks.title")}</h1></div>
+            <p className="mt-1 text-[12.5px] text-ink-secondary">{section === "calendar" ? t("tasks.calendarSubtitle") : t("tasks.webhooksSubtitle")}</p>
           </div>
           <div className="flex items-center gap-2">
-            {running > 0 && <span className="flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-2.5 py-1.5 text-[11px] text-accent"><Loader2 size={12} className="animate-spin" />{running} active</span>}
-            {unseenFailures > 0 && <span className="flex items-center gap-1.5 rounded-full border border-danger/25 bg-danger/10 px-2.5 py-1.5 text-[11px] text-danger"><CircleAlert size={12} />{unseenFailures} need attention</span>}
-            {paused.length > 0 && <button onClick={() => setPausedOpen(true)} className="flex items-center gap-1.5 rounded-full border border-hairline/50 bg-panel px-2.5 py-1.5 text-[11px] text-ink-secondary hover:bg-raised hover:text-ink"><Pause size={12} />{paused.length} paused</button>}
-            {section === "calendar" && <button onClick={() => setEditor("new")} disabled={visibleBots.length === 0} className="flex items-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-medium text-white shadow-lg shadow-accent/10 hover:brightness-110 disabled:opacity-40"><Plus size={15} />New routine</button>}
+            {running > 0 && <span className="flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/10 px-2.5 py-1.5 text-[11px] text-accent"><Loader2 size={12} className="animate-spin" />{t("tasks.activeCount", { count: running })}</span>}
+            {unseenFailures > 0 && <span className="flex items-center gap-1.5 rounded-full border border-danger/25 bg-danger/10 px-2.5 py-1.5 text-[11px] text-danger"><CircleAlert size={12} />{t("tasks.needAttentionCount", { count: unseenFailures })}</span>}
+            {paused.length > 0 && <button onClick={() => setPausedOpen(true)} className="flex items-center gap-1.5 rounded-full border border-hairline/50 bg-panel px-2.5 py-1.5 text-[11px] text-ink-secondary hover:bg-raised hover:text-ink"><Pause size={12} />{t("tasks.pausedCount", { count: paused.length })}</button>}
+            {section === "calendar" && <button onClick={() => setEditor("new")} disabled={visibleBots.length === 0} className="flex items-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-[13px] font-medium text-white shadow-lg shadow-accent/10 hover:brightness-110 disabled:opacity-40"><Plus size={15} />{t("tasks.newRoutine")}</button>}
           </div>
         </div>
         <div className="mt-4 flex items-center gap-1 rounded-xl bg-panel p-1 sm:w-fit">
-          <button onClick={() => setSection("calendar")} className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium", section === "calendar" ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}><CalendarDays size={13} />Routines</button>
-          <button onClick={() => setSection("webhooks")} className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium", section === "webhooks" ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}><Webhook size={13} />Webhooks{state.webhooks.length > 0 && <span className="rounded-full bg-accent/15 px-1.5 text-[10px] text-accent">{state.webhooks.length}</span>}</button>
+          <button onClick={() => setSection("calendar")} className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium", section === "calendar" ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}><CalendarDays size={13} />{t("tasks.tabRoutines")}</button>
+          <button onClick={() => setSection("webhooks")} className={cn("flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-medium", section === "webhooks" ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}><Webhook size={13} />{t("tasks.tabWebhooks")}{state.webhooks.length > 0 && <span className="rounded-full bg-accent/15 px-1.5 text-[10px] text-accent">{state.webhooks.length}</span>}</button>
         </div>
         <div className="mt-3 rounded-xl border border-hairline/45 bg-panel/70 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-ink-secondary">
           {section === "calendar" ? (
-            <><strong className="font-medium text-ink">Task</strong> = one conversation and result. <strong className="font-medium text-ink">Routine</strong> = a reusable schedule that creates a fresh task each run, using that agent's model, tools, permissions, computer, and connected apps.</>
+            <><strong className="font-medium text-ink">{t("tasks.taskTerm")}</strong> {t("tasks.glossaryTaskRest")} <strong className="font-medium text-ink">{t("tasks.routineTerm")}</strong> {t("tasks.glossaryRoutineRest")}</>
           ) : (
-            <><strong className="font-medium text-ink">Webhook</strong> = an event endpoint that creates a fresh task. Connected services can call it when something happens; the receiving agent keeps its existing tools and permissions.</>
+            <><strong className="font-medium text-ink">{t("tasks.webhookTerm")}</strong> {t("tasks.glossaryWebhookRest")}</>
           )}
         </div>
         {section === "calendar" && <div className="mt-3 flex flex-wrap items-center gap-2">
           <div className="flex items-center rounded-xl border border-hairline/50 bg-panel p-0.5">
-            <button onClick={() => move(-1)} className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink" aria-label="Previous dates"><ChevronLeft size={16} /></button>
-            <button onClick={goToday} className="px-2.5 py-1.5 text-[12px] font-medium text-ink hover:text-accent">Today</button>
-            <button onClick={() => move(1)} className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink" aria-label="Next dates"><ChevronRight size={16} /></button>
+            <button onClick={() => move(-1)} className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink" aria-label={t("tasks.prevDatesAria")}><ChevronLeft size={16} /></button>
+            <button onClick={goToday} className="px-2.5 py-1.5 text-[12px] font-medium text-ink hover:text-accent">{t("tasks.calendarToday")}</button>
+            <button onClick={() => move(1)} className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink" aria-label={t("tasks.nextDatesAria")}><ChevronRight size={16} /></button>
           </div>
           <div className="min-w-[190px] px-2 text-[14px] font-semibold text-ink">
             {new Date(rangeStart).toLocaleDateString([], { month: "long", year: "numeric" })}
           </div>
           <select value={botFilter} onChange={(event) => setBotFilter(event.target.value)} className="rounded-xl border border-hairline/50 bg-panel px-3 py-2 text-[12px] text-ink outline-none focus:border-accent/60">
-            <option value="all">All MAUSes</option>
+            <option value="all">{t("tasks.allBots")}</option>
             {visibleBots.map((bot) => <option key={bot.id} value={bot.id}>{bot.name}</option>)}
           </select>
           <div className="ml-auto flex rounded-xl bg-panel p-1">
-            {([1, 3, 7] as const).map((days) => <button key={days} onClick={() => { setViewDays(days); setAnchor(days === 7 ? startOfWeek(anchor) : startOfDay(anchor)); }} className={cn("rounded-lg px-3 py-1.5 text-[11px] font-medium", viewDays === days ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}>{days === 1 ? "Day" : days === 3 ? "3 days" : "Week"}</button>)}
+            {([1, 3, 7] as const).map((days) => <button key={days} onClick={() => { setViewDays(days); setAnchor(days === 7 ? startOfWeek(anchor) : startOfDay(anchor)); }} className={cn("rounded-lg px-3 py-1.5 text-[11px] font-medium", viewDays === days ? "bg-raised text-ink shadow" : "text-ink-secondary hover:text-ink")}>{days === 1 ? t("tasks.viewDay") : days === 3 ? t("tasks.view3Days") : t("tasks.calendarWeek")}</button>)}
           </div>
         </div>}
       </header>
@@ -675,10 +683,10 @@ export function RoutinesPage() {
               {visibleBots.slice(0, 3).map((bot, index) => <div key={bot.id} className="-ml-3 first:ml-0" style={{ transform: `translateY(${Math.abs(index - 1) * 9}px) rotate(${(index - 1) * 5}deg)` }}><BotAvatar bot={bot} state={index === 1 ? "excited" : "idle"} size={84} /></div>)}
               {visibleBots.length === 0 && <CalendarClock size={58} className="text-ink-secondary/40" />}
             </div>
-            <h2 className="text-[18px] font-semibold text-ink">Put your MAUS team on a rhythm</h2>
-            <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">Plan research briefs, daily check-ins, recurring reviews, or one-time work. Every run becomes a separate task with its own result.</p>
-            <button onClick={() => setEditor("new")} disabled={visibleBots.length === 0} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-medium text-white hover:brightness-110 disabled:opacity-40"><Plus size={15} />Create your first routine</button>
-            {visibleBots.length === 0 && <p className="mt-3 text-[12px] text-warning">Create a bot first, then come back to schedule it.</p>}
+            <h2 className="text-[18px] font-semibold text-ink">{t("tasks.emptyTeamTitle")}</h2>
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-secondary">{t("tasks.emptyTeamHint")}</p>
+            <button onClick={() => setEditor("new")} disabled={visibleBots.length === 0} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13px] font-medium text-white hover:brightness-110 disabled:opacity-40"><Plus size={15} />{t("tasks.createFirstRoutine")}</button>
+            {visibleBots.length === 0 && <p className="mt-3 text-[12px] text-warning">{t("tasks.needBotFirst")}</p>}
           </div>
         </div>
       ) : (

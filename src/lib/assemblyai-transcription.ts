@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readLocale, translate } from "@/i18n/catalog";
 
 export type AssemblyAITurn = {
   order: number;
@@ -82,14 +83,14 @@ export async function startAssemblyAITranscription({
   });
   const socket = new WebSocket(`${STREAMING_ENDPOINT}?${query}`);
   const connected = new Promise<void>((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error("AssemblyAI took too long to connect.")), 10_000);
+    const timer = window.setTimeout(() => reject(new Error("AssemblyAI 连接超时。")), 10_000);
     socket.addEventListener("open", () => {
       window.clearTimeout(timer);
       resolve();
     }, { once: true });
     socket.addEventListener("error", () => {
       window.clearTimeout(timer);
-      reject(new Error("Could not open the AssemblyAI transcription stream."));
+      reject(new Error(translate(readLocale(), "lib.transcriptionStream")));
     }, { once: true });
   });
   try {

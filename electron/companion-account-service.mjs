@@ -125,25 +125,25 @@ function withAuthenticatedAccount(
 }
 
 const FRIENDLY_MESSAGES = Object.freeze({
-  invalid_email: "Enter a valid email address.",
-  invalid_request: "The secure connection request was not accepted. Check the details and try again.",
-  invalid_otp: "That code is not valid. Check the email and try again.",
-  otp_expired: "That code expired. Email yourself a new one.",
-  unauthorized: "Your sign-in expired. Email yourself a new code to reconnect.",
-  forbidden: "The secure connection request was not allowed. Try signing in again.",
-  signed_out: "Your sign-in expired. Email yourself a new code to reconnect.",
-  network_unavailable: "OpenMausBot could not reach its secure connection service. Check your internet and try again.",
-  rate_limited: "Too many attempts were made. Wait a little, then try again.",
-  credential_rotation_rate_limited: "This computer was reconnected too often. Wait a little, then try again.",
-  installation_limit_reached: "This account has reached its computer limit. Remove an old computer and try again.",
-  installation_exists: "This computer is already connected. Try again to recover it.",
-  endpoint_busy: "The secure connection is still being prepared. Try again in a moment.",
-  endpoint_unavailable: "The secure connection service could not finish setup. Local pairing still works; try again shortly.",
-  endpoint_cleanup_pending: "The secure connection is still being removed. Try signing out again shortly.",
-  control_plane_unavailable: "Secure access is not available right now. Local pairing still works.",
-  internal_error: "The secure connection service had a problem. Local pairing still works; try again.",
-  invalid_response: "The secure connection service returned an unexpected response. Try again.",
-  request_failed: "The secure connection request could not be completed. Local pairing still works; try again.",
+  invalid_email: "请输入有效的邮箱地址。",
+  invalid_request: "安全连接请求未被接受。请检查信息后重试。",
+  invalid_otp: "验证码不对。请检查邮件后重试。",
+  otp_expired: "验证码已过期。请重新给自己发送一封。",
+  unauthorized: "登录已过期。请重新发送验证码登录。",
+  forbidden: "安全连接请求未被允许。请重新登录后重试。",
+  signed_out: "登录已过期。请重新发送验证码登录。",
+  network_unavailable: "OpenMausBot 无法连接安全连接服务。请检查网络后重试。",
+  rate_limited: "尝试次数过多。请稍等片刻再试。",
+  credential_rotation_rate_limited: "这台电脑重连得太频繁。请稍等片刻再试。",
+  installation_limit_reached: "这个账户的设备数已达上限。请先移除一台旧设备再试。",
+  installation_exists: "这台电脑已经连接过了。再试一次即可找回。",
+  endpoint_busy: "安全连接仍在准备中。请稍后再试。",
+  endpoint_unavailable: "安全连接服务未能完成设置。本地配对不受影响；请稍后重试。",
+  endpoint_cleanup_pending: "安全连接仍在移除中。请稍后再重新登录。",
+  control_plane_unavailable: "安全访问目前不可用。本地配对不受影响。",
+  internal_error: "安全连接服务出了点问题。本地配对不受影响；请重试。",
+  invalid_response: "安全连接服务返回了意外的响应。请重试。",
+  request_failed: "安全连接请求未能完成。本地配对不受影响；请重试。",
 });
 
 export function friendlyCompanionAccountError(error) {
@@ -284,7 +284,7 @@ export function createCompanionAccountService({
         available,
         status: "error",
         email: account.email,
-        message: "This computer still needs a secure address. Try again; local pairing continues to work.",
+        message: "这台电脑还需要一个安全地址。请重试；本地配对不受影响。",
       });
     }
     const connection = managedConnectionState?.() ?? {};
@@ -295,7 +295,7 @@ export function createCompanionAccountService({
           status: "connecting",
           email: account.email,
           endpoint: access.endpoint,
-          message: "The secure connection is starting. Local pairing remains available.",
+          message: "安全连接正在启动。本地配对不受影响。",
         });
       }
       if (["unavailable", "error"].includes(connection.status)) {
@@ -304,7 +304,7 @@ export function createCompanionAccountService({
           status: "error",
           email: account.email,
           endpoint: access.endpoint,
-          message: "The secure connection needs attention. Local pairing still works.",
+          message: "安全连接需要处理。本地配对不受影响。",
         });
       }
     }
@@ -449,7 +449,7 @@ export function createCompanionAccountService({
         status: "error",
         email: user.email,
         endpoint: endpoint.endpoint.url,
-        message: "The address is ready, but this app could not start its secure connection. Local pairing still works.",
+        message: "地址已就绪，但应用未能启动安全连接。本地配对不受影响。",
       };
     }
     return settledState();
