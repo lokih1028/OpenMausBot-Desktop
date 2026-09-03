@@ -39,10 +39,10 @@ function Shell() {
   // Apply the configured UI language the moment config arrives or changes;
   // "" follows the system. The epoch bump re-renders extracted strings —
   // t() reads a module variable, so React needs this nudge.
-  const language = state.config?.language ?? "";
+  const language = state.config?.language ?? "zh";
   const [, setLocaleEpoch] = useState(0);
   useEffect(() => {
-    setLocale(language || globalThis.navigator?.language);
+    setLocale(language || "zh");
     setLocaleEpoch((epoch) => epoch + 1);
   }, [language]);
   const [paletteOpen, setPaletteOpen] = useState(false);

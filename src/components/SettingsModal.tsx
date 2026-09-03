@@ -23,6 +23,7 @@ import {
   browserProfileDeletionBlockReason,
   browserProfilesForPatch,
 } from "@/lib/browser-profiles";
+import { useT } from "@/i18n";
 
 const SECTIONS: Array<{
   id: AppSettingsSection;
@@ -46,6 +47,7 @@ function sectionMatches(section: (typeof SECTIONS)[number], query: string): bool
 
 /** Name + email, persisted to /api/config {profile} on blur. */
 function ProfileFields() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const [name, setName] = useState(state.config?.profile?.name ?? "");
   const [email, setEmail] = useState(state.config?.profile?.email ?? "");
@@ -69,7 +71,7 @@ function ProfileFields() {
     "w-full rounded-lg border border-hairline/40 bg-inset px-3 py-2 text-[14px] text-ink placeholder:text-ink-secondary focus:border-hairline focus:outline-none";
   return (
     <div className="flex flex-col gap-3">
-      <input value={name} onChange={(e) => setName(e.target.value)} onBlur={save} placeholder="Your name" className={inputClass} />
+      <input value={name} onChange={(e) => setName(e.target.value)} onBlur={save} placeholder={t("settings.profile.namePlaceholder") || "你的名字"} className={inputClass} />
       <input
         type="email"
         value={email}
@@ -83,23 +85,24 @@ function ProfileFields() {
 }
 
 function UpdatesRow() {
+  const { t } = useT();
   const s = useUpdaterState();
   if (!window.ogb?.updater) return null;
   const updater = window.ogb.updater;
   const label =
     s?.status === "checking"
-      ? "Checking…"
+      ? t("settings.updates.checking") || "正在检查…"
       : s?.status === "available"
-        ? `${s.version} available`
+        ? t("settings.updates.available", { version: s.version ?? "" }) || `${s.version} 可更新`
         : s?.status === "downloading"
-          ? `Downloading ${Math.round(s.percent ?? 0)}%`
+          ? t("settings.updates.downloading", { percent: Math.round(s.percent ?? 0) }) || `正在下载 ${Math.round(s.percent ?? 0)}%`
           : s?.status === "downloaded"
-            ? `${s.version} ready — restart to apply`
+            ? t("settings.updates.ready", { version: s.version ?? "" }) || `${s.version} 已就绪 — 重启以应用`
             : s?.status === "error"
-              ? `Check failed: ${s.message ?? "unknown error"}`
-              : "You're on the latest version we know of.";
+              ? t("settings.updates.failed", { message: s.message ?? "unknown error" }) || `检查失败：${s.message ?? "未知错误"}`
+              : t("settings.updates.latest") || "当前已是最新版本。";
   return (
-    <Card title="Updates" subtitle={label}>
+    <Card title={t("settings.updates.title") || "更新"} subtitle={label}>
       <button
         onClick={() => {
           if (s?.status === "available") return void updater.download();
@@ -110,10 +113,10 @@ function UpdatesRow() {
         className="rounded-lg border border-hairline/40 px-3 py-1.5 text-[13px] text-ink hover:bg-control disabled:opacity-40"
       >
         {s?.status === "available"
-          ? "Download"
+          ? t("common.download") || "下载"
           : s?.status === "downloaded"
-            ? "Restart and install"
-            : "Check for updates"}
+            ? t("common.restartAndInstall") || "重启并安装"
+            : t("settings.updates.check") || "检查更新"}
       </button>
     </Card>
   );
@@ -124,15 +127,16 @@ function UpdatesRow() {
  * worst, and the worst — conversation text — is exactly what this never
  * sends (autocapture is off; see lib/analytics.ts). */
 function AnalyticsRow() {
+  const { t } = useT();
   const [on, setOn] = useState(analyticsEnabled);
   return (
     <Card
-      title="Usage analytics"
-      subtitle="Anonymous product events — app opened, which features get used. Never conversations, prompts, file contents, or bot output. Your email is only attached if you shared it during setup."
+      title={t("settings.analytics.title") || "用量分析"}
+      subtitle={t("settings.analytics.subtitle") || "匿名产品事件：打开应用、哪些功能被使用。不会发送对话、提示词、文件内容或机器人输出。只有你在设置时填写过邮箱，才会附上邮箱。"}
     >
       <Switch
         checked={on}
-        aria-label="Send usage analytics"
+        aria-label={t("settings.analytics.aria") || "发送用量分析"}
         onClick={() => {
           const next = !on;
           setAnalyticsEnabled(next);
@@ -144,6 +148,7 @@ function AnalyticsRow() {
 }
 
 function LanguageRow() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const current = state.config?.language ?? "";
   const [saving, setSaving] = useState(false);
@@ -168,8 +173,8 @@ function LanguageRow() {
 
   return (
     <Card
-      title="Language"
-      subtitle="The app follows your system language unless you pick one here. Only part of the interface is translated so far — untranslated text stays in English."
+      title={t("language.title") || "语言"}
+      subtitle={t("language.subtitle") || "应用界面语言，失焦或选择即生效。"}
     >
       <select
         value={current}
@@ -178,7 +183,7 @@ function LanguageRow() {
         onChange={(event) => void save(event.target.value)}
         className="w-full max-w-[280px] rounded-lg border border-hairline/40 bg-inset px-2.5 py-1.5 text-[13.5px] text-ink disabled:cursor-wait disabled:opacity-50"
       >
-        <option value="">System</option>
+        <option value="">跟随系统 (System)</option>
         {localeChoices.map(({ code, label }) => (
           <option key={code} value={code}>
             {label}
@@ -215,19 +220,19 @@ function ToolCallsRow() {
 
   return (
     <Card
-      title="Tool calls"
-      subtitle="Show each tool a bot runs in the transcript. Off by default — the mascot already shows that work is happening."
+      title="工具调用"
+      subtitle="在对话记录中显示机器人运行的每个工具。默认关闭 — 吉祥物动作已直观展示正在工作。"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">Show tool calls</div>
+          <div className="text-[14px] font-medium text-ink">显示工具调用</div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">
-            Named chips for Bash, search, and other tools. Errors and bot-to-bot messages still appear.
+            展示 Bash、搜索等工具调用的标签条。错误和机器人间协作消息始终可见。
           </div>
         </div>
         <Switch
           checked={enabled}
-          aria-label="Show tool calls in chat"
+          aria-label="在聊天中显示工具调用"
           disabled={saving}
           onClick={() => void toggle()}
           className="disabled:cursor-wait disabled:opacity-50"
@@ -239,6 +244,7 @@ function ToolCallsRow() {
 }
 
 function ExperimentalFeaturesRow() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const skillRecorder = skillRecorderEnabled(state.config);
   const browser = builtInBrowserEnabled(state.config);
@@ -258,7 +264,7 @@ function ExperimentalFeaturesRow() {
       });
       dispatch({ type: "configStatus", config });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the experimental feature setting.");
+      setError(cause instanceof Error ? cause.message : "无法保存实验功能设置。");
     } finally {
       setSaving(null);
     }
@@ -266,19 +272,19 @@ function ExperimentalFeaturesRow() {
 
   return (
     <Card
-      title="Experimental features"
-      subtitle="Early features may change while we test them. They stay off unless you enable them."
+      title={t("settings.experimental.title") || "实验功能"}
+      subtitle={t("settings.experimental.subtitle") || "早期功能可能随时改动，默认关闭。"}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">Teach a skill</div>
+          <div className="text-[14px] font-medium text-ink">{t("settings.experimental.teachSkill") || "教一项技能"}</div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">
-            Record a workflow, use /learn, or ask a supported bot to run /create-verification-skill. Every change waits for your review.
+            {t("settings.experimental.teachSkillHint") || "在侧栏显示流程录制器。录制工作流、使用 /learn，或让支持的机器人运行 /create-verification-skill。"}
           </div>
         </div>
         <Switch
           checked={skillRecorder}
-          aria-label="Show Teach a skill"
+          aria-label={t("settings.experimental.teachSkillAria") || "显示「教一项技能」"}
           disabled={saving !== null}
           onClick={() => void toggle("skillRecorder", !skillRecorder)}
           className="disabled:cursor-wait disabled:opacity-50"
@@ -286,20 +292,20 @@ function ExperimentalFeaturesRow() {
       </div>
       <div className="mt-4 flex items-center justify-between gap-4 border-t border-hairline/30 pt-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium text-ink">Built-in browser</div>
+          <div className="text-[14px] font-medium text-ink">内置浏览器</div>
           <div className="mt-0.5 text-[12px] leading-relaxed text-ink-secondary">
             {desktopBrowser
               ? browser
-                ? "Enabled for this workspace. Each bot also has its own browser switch."
-                : "Off by default. Enable it to let supported bots use a browser tab you can watch and take over."
+                ? "已为此工作区开启。每个机器人也有各自的浏览器开关。"
+                : "默认关闭。开启后，支持的机器人可以使用你可以实时查看并接管的浏览器标签页。"
               : browserBlockedOnWindows
-                ? "Temporarily unavailable on Windows while Electron's production sandbox support is being verified."
-                : "Needs the OpenMausBot desktop app."}
+                ? "Windows 生产环境沙箱正在验证中，暂未开放。"
+                : "需要 OpenMausBot 桌面端应用。"}
           </div>
         </div>
         <Switch
           checked={browser}
-          aria-label="Enable the built-in browser"
+          aria-label="开启内置浏览器"
           disabled={saving !== null || (!browser && !desktopBrowser)}
           onClick={() => void toggle("browser", !browser)}
           className="disabled:cursor-wait disabled:opacity-50"
@@ -468,6 +474,7 @@ function BrowserProfilesRow() {
  * report holds versions, configured-or-not booleans and the server.log tail —
  * never credential values (the desktop shell does not read secret fields). */
 function DiagnosticsRow() {
+  const { t } = useT();
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
@@ -477,7 +484,7 @@ function DiagnosticsRow() {
     setResult(null);
     try {
       const path = await window.ogb.exportDiagnostics();
-      if (path) setResult({ kind: "success", message: `Saved to ${path}` });
+      if (path) setResult({ kind: "success", message: t("settings.diagnostics.saved", { path }) || `已保存到 ${path}` });
     } catch (e) {
       setResult({ kind: "error", message: e instanceof Error ? e.message : String(e) });
     } finally {
@@ -487,17 +494,17 @@ function DiagnosticsRow() {
 
   return (
     <Card
-      title="Diagnostics"
-      subtitle="Versions, configuration on/off state and a redacted server log tail. Review the file before sharing it."
+      title={t("settings.diagnostics.title") || "诊断信息"}
+      subtitle={t("settings.diagnostics.subtitle") || "版本、配置开关状态和脱敏后的服务日志尾部。分享前请先自行查看。"}
     >
       <div className="flex min-w-0 flex-col items-end gap-2">
         <button
           onClick={() => void exportDiagnostics()}
           disabled={exporting}
-          aria-label="Export diagnostics to a text file"
+          aria-label={t("settings.diagnostics.exportAria") || "导出诊断到文本文件"}
           className="rounded-lg border border-hairline/40 px-3 py-1.5 text-[13px] text-ink hover:bg-control disabled:opacity-40"
         >
-          {exporting ? "Exporting…" : "Export Diagnostics…"}
+          {exporting ? (t("settings.diagnostics.exporting") || "正在导出…") : (t("settings.diagnostics.export") || "导出诊断…")}
         </button>
         {result ? (
           <span
@@ -513,11 +520,26 @@ function DiagnosticsRow() {
 }
 
 export function SettingsModal() {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const section = state.appSettingsSection;
   const dialogRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
+
+  const sectionLabel = (id: AppSettingsSection): string => {
+    switch (id) {
+      case "general": return t("settings.nav.general") || "通用";
+      case "experimental": return t("settings.experimental.title") || "实验功能";
+      case "connections": return t("settings.nav.connections") || "连接";
+      case "engines": return t("settings.nav.engines") || "引擎";
+      case "companion": return t("settings.nav.companion") || "手机";
+      case "computer": return t("settings.nav.computer") || "本地虚拟机";
+      case "usage": return t("settings.nav.usage") || "用量";
+      default: return id;
+    }
+  };
+
   const visibleSections = SECTIONS.filter((entry) => sectionMatches(entry, q));
 
   useEffect(() => {
@@ -586,7 +608,7 @@ export function SettingsModal() {
         {/* section nav */}
         <nav className="flex w-[190px] shrink-0 flex-col gap-0.5 border-r border-hairline/40 p-3">
           <div id="app-settings-title" className="px-2 pb-2 pt-1 text-[15px] font-semibold text-ink">
-            Settings
+            {t("settings.title")}
           </div>
           <div className="mb-1.5 flex items-center gap-2 rounded-lg bg-control/70 px-2.5 py-1.5">
             <Search size={14} className="shrink-0 text-ink-secondary" />
@@ -599,17 +621,17 @@ export function SettingsModal() {
                 if (query) setQuery("");
                 else dispatch({ type: "toggleAppSettings", open: false });
               }}
-              placeholder="Search"
-              aria-label="Search settings"
+              placeholder={t("common.search")}
+              aria-label={t("settings.searchAria")}
               className="w-full bg-transparent text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none"
             />
           </div>
           {visibleSections.length === 0 && (
             <div className="px-2.5 py-4 text-[12.5px] leading-relaxed text-ink-secondary">
-              Nothing matches “{query.trim()}”
+              {t("settings.nothingMatches", { query: query.trim() })}
             </div>
           )}
-          {visibleSections.map(({ id, label, icon: Icon }) => (
+          {visibleSections.map(({ id, icon: Icon }) => (
             <button
               key={id}
               onClick={() => dispatch({ type: "toggleAppSettings", open: true, section: id })}
@@ -620,7 +642,7 @@ export function SettingsModal() {
               )}
             >
               <Icon size={15} />
-              {label}
+              {sectionLabel(id)}
             </button>
           ))}
         </nav>
@@ -628,11 +650,11 @@ export function SettingsModal() {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center justify-between px-5 py-3">
             <span className="text-[15px] font-semibold text-ink">
-              {SECTIONS.find((s) => s.id === section)?.label}
+              {section ? sectionLabel(section) : ""}
             </span>
             <button
               onClick={() => dispatch({ type: "toggleAppSettings", open: false })}
-              aria-label="Close settings"
+              aria-label={t("settings.closeAria")}
               className="rounded-md p-1 text-ink-secondary hover:bg-control hover:text-ink"
             >
               <X size={18} />
@@ -642,13 +664,13 @@ export function SettingsModal() {
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 pb-5">
             {section === "general" && (
               <>
-                <Card title="Profile" subtitle="Shown in the sidebar. Saved as you go.">
+                <Card title={t("settings.profile.title") || "个人资料"} subtitle={t("settings.profile.subtitle") || "显示在侧栏。失焦即保存。"}>
                   <ProfileFields />
                 </Card>
-                <Card title="Skin" subtitle="Applies instantly and is remembered on this machine.">
+                <Card title={t("settings.skin.title") || "外观"} subtitle={t("settings.skin.subtitle") || "立即生效，并记住在这台电脑上。"}>
                   <SkinPicker />
                 </Card>
-                <Card title="Channel turns" subtitle="Set one maximum duration for every bot turn in a channel.">
+                <Card title={t("settings.channelTurns.title") || "频道回合"} subtitle={t("settings.channelTurns.subtitle") || "为频道里每次机器人回复设置最长时长。"}>
                   <RoomTurnTimeoutSettings />
                 </Card>
                 <LanguageRow />
@@ -668,13 +690,13 @@ export function SettingsModal() {
 
             {section === "connections" && (
               <Card
-                title="Connections"
-                subtitle="Connected apps work automatically in the installed app. Other optional service keys stay on this computer."
+                title={t("settings.connections.title") || "连接"}
+                subtitle={t("settings.connections.subtitle") || "已安装应用里，已连接的应用会自动可用。其他可选服务密钥只保存在这台电脑。"}
               >
                 <div className="flex flex-col gap-4">
                   {state.config?.composio.mode === "managed" ? (
                     <div className="rounded-lg border border-success/25 bg-success/10 px-3 py-2 text-[13px] text-success">
-                      Connected apps service is ready
+                      {t("settings.connections.composioReady") || "已连接应用服务就绪"}
                     </div>
                   ) : null}
                   <TranscriptionSettings />
@@ -682,7 +704,7 @@ export function SettingsModal() {
                   <VpsConnection />
                   <ApiKeyRow section="opencodeGo" />
                   <details className="rounded-lg border border-hairline/40 bg-inset px-3 py-2">
-                    <summary className="cursor-pointer text-[13px] text-ink-secondary">Self-host connected apps</summary>
+                    <summary className="cursor-pointer text-[13px] text-ink-secondary">{t("settings.connections.selfHost") || "自行托管已连接应用"}</summary>
                     <div className="mt-3">
                       <ApiKeyRow section="composio" />
                     </div>
@@ -692,7 +714,7 @@ export function SettingsModal() {
             )}
 
             {section === "engines" && (
-              <Card title="Engine CLIs" subtitle="Which binary each engine runs. Saved as you go.">
+              <Card title={t("engines.title") || "AI 引擎"} subtitle={t("engines.subtitle") || "每个引擎运行的命令行工具。修改后自动保存。"}>
                 <EnginesSettings />
               </Card>
             )}

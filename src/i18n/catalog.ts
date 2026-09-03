@@ -13,8 +13,6 @@ export function readLocale(): Locale {
   } catch {
     /* private mode / tests */
   }
-  const nav = (typeof navigator !== "undefined" ? navigator.language : "zh").toLowerCase();
-  if (nav.startsWith("en")) return "en";
   return "zh";
 }
 

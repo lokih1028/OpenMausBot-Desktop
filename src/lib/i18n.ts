@@ -21,8 +21,8 @@ export function setLocale(tag: string | undefined): string {
   return resolved;
 }
 
-let activePack: LocalePack = en;
-setLocale(globalThis.navigator?.language);
+let activePack: LocalePack = locales.zh ?? en;
+setLocale("zh");
 
 /** Look up a catalog string. `{name}` placeholders interpolate from params;
  * a placeholder without a matching param stays verbatim so a bad pack shows
