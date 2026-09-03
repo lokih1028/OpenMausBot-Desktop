@@ -34,3 +34,6 @@ export function t(key: LocaleKey, params?: Record<string, string | number>): str
     name in params ? String(params[name]) : match,
   );
 }
+
+// Re-export React hook and Provider for components using useT()
+export { useT, I18nProvider } from "@/i18n";

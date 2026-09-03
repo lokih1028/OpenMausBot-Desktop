@@ -22,10 +22,11 @@ import { SkillRecorderPage } from "@/components/SkillRecorderPage";
 import { TeamMapPage } from "@/components/TeamMapPage";
 import { heldComputerControlBotIds } from "@/lib/computer-control";
 import { skillRecorderEnabled } from "@/lib/feature-flags";
-import { setLocale } from "@/lib/i18n";
+import { setLocale, useT, I18nProvider } from "@/lib/i18n";
 
 function Shell() {
   const { state, dispatch } = useStore();
+  const { t } = useT();
   const unreadCount =
     state.bots.filter((bot) => !bot.hidden && bot.unread).length +
     state.groups.filter((group) => group.unread).length;
@@ -224,7 +225,7 @@ function Shell() {
       {!calendarFocus && <button
         type="button"
         ref={menuButtonRef}
-        aria-label="Open bot list"
+        aria-label={t("app.openBotList")}
         aria-expanded={drawerOpen}
         onClick={() => setDrawerOpen(true)}
         className="absolute left-3 top-3 z-30 rounded-md p-1.5 text-ink-secondary hover:bg-raised hover:text-ink md:hidden"
@@ -270,11 +271,11 @@ function Shell() {
         <main className="flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-3 bg-app text-ink-secondary">
           <Loader2 size={20} className="animate-spin" />
           <div className="text-[14px]">
-            {state.connected ? "No bots yet" : "Connecting to the bot server…"}
+            {state.connected ? t("app.noBotsYet") : t("app.connecting")}
           </div>
           {!state.connected && (
             <div className="text-[12px]">
-              Start it with <code className="rounded bg-raised px-1.5 py-0.5">pnpm dev:server</code>
+              {t("app.startServerHint")} <code className="rounded bg-raised px-1.5 py-0.5">pnpm dev:server</code>
             </div>
           )}
         </main>
@@ -306,10 +307,12 @@ export default function App() {
   }, []);
   return (
     <DesktopCapabilitiesProvider>
-      <StoreProvider>
-        <Shell />
-        {gated && <Onboarding onDone={() => setGated(false)} />}
-      </StoreProvider>
+      <I18nProvider>
+        <StoreProvider>
+          <Shell />
+          {gated && <Onboarding onDone={() => setGated(false)} />}
+        </StoreProvider>
+      </I18nProvider>
     </DesktopCapabilitiesProvider>
   );
 }
