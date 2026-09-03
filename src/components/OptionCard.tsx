@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useStore, visibleMessages, type Message } from "@/state/store";
+import { useT } from "@/i18n";
 import { cn } from "@/lib/cn";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -28,6 +29,7 @@ export function OptionCard({
   message: Message;
 }) {
   const { state, dispatch } = useStore();
+  const { t } = useT();
   const [custom, setCustom] = useState("");
   const card = message.card;
   const bot = state.bots.find((candidate) => candidate.id === botId);
@@ -95,7 +97,7 @@ export function OptionCard({
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && answer(custom)}
-          placeholder="Type your own answer"
+          placeholder={t("misc.onboardingCard.customAnswer")}
           className="mt-3 w-full rounded-lg border border-hairline/40 bg-inset px-3 py-2.5 text-[15px] text-ink placeholder:text-ink-secondary focus:outline-none focus:border-hairline"
         />
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Circle, Loader2, RotateCcw, ShieldCheck, Smartphone, Usb } from "lucide-react";
 import { usePageVisible } from "@/lib/page-visible";
+import { useT } from "@/i18n";
 import type { AndroidDeviceInput, AndroidDeviceStatus, AndroidUsbDevice } from "@/types/ogb";
 
 type UnitPoint = { x: number; y: number };
@@ -47,6 +48,7 @@ function deviceLabel(device: AndroidUsbDevice) {
 }
 
 export function AndroidDevicePanel({ status }: { status: AndroidDeviceStatus }) {
+  const { t } = useT();
   const bridge = window.ogb?.androidDevice;
   const pageVisible = usePageVisible();
   const authorized = status.devices.filter((device) => device.state === "device");
@@ -202,7 +204,7 @@ export function AndroidDevicePanel({ status }: { status: AndroidDeviceStatus }) 
               <Smartphone size={16} className="text-success" /> {deviceLabel(selected)}
             </div>
             <div className="mt-1 text-[12px] leading-relaxed text-ink-secondary">
-              Connected directly over USB. The screen and controls stay on this computer.
+              {t("misc.androidDevice.usbNote")}
             </div>
           </div>
           <span className="flex shrink-0 items-center gap-1 text-[11px] text-success">
@@ -227,14 +229,14 @@ export function AndroidDevicePanel({ status }: { status: AndroidDeviceStatus }) 
       {!ready ? (
         <div className="rounded-xl border border-warning/25 bg-warning/10 p-4 text-[12px] leading-relaxed text-warning">
           {selected.state === "unauthorized"
-            ? "Unlock the Android phone, accept the “Allow USB debugging” prompt, and optionally choose Always allow from this computer."
-            : `The phone is ${selected.state}. Reconnect the USB cable and keep USB debugging enabled.`}
+            ? t("misc.androidDevice.unauthorized")
+            : t("misc.androidDevice.deviceState", { state: selected.state })}
         </div>
       ) : (
         <>
           <div
             role="application"
-            aria-label={`Interactive Android screen for ${deviceLabel(selected)}`}
+            aria-label={t("misc.androidDevice.screenAria", { name: deviceLabel(selected) })}
             tabIndex={0}
             onKeyDown={keyDown}
             onWheel={wheel}
@@ -274,7 +276,7 @@ export function AndroidDevicePanel({ status }: { status: AndroidDeviceStatus }) 
               <img
                 ref={imageRef}
                 src={frame}
-                alt={`${deviceLabel(selected)} screen`}
+                alt={t("misc.androidDevice.screenAlt", { name: deviceLabel(selected) })}
                 draggable={false}
                 onLoad={(event) => {
                   setDimensions({
@@ -293,23 +295,23 @@ export function AndroidDevicePanel({ status }: { status: AndroidDeviceStatus }) 
               onClick={() => send({ type: "key", key: "back" })}
               className="flex items-center justify-center gap-1.5 rounded-lg bg-raised py-2 text-[12px] text-ink hover:bg-raised-hover"
             >
-              <ArrowLeft size={13} /> Back
+              <ArrowLeft size={13} /> {t("misc.androidDevice.back")}
             </button>
             <button
               onClick={() => send({ type: "key", key: "home" })}
               className="flex items-center justify-center gap-1.5 rounded-lg bg-raised py-2 text-[12px] text-ink hover:bg-raised-hover"
             >
-              <Circle size={12} /> Home
+              <Circle size={12} /> {t("misc.androidDevice.home")}
             </button>
             <button
               onClick={() => send({ type: "key", key: "recent" })}
               className="flex items-center justify-center gap-1.5 rounded-lg bg-raised py-2 text-[12px] text-ink hover:bg-raised-hover"
             >
-              <RotateCcw size={13} /> Recent
+              <RotateCcw size={13} /> {t("misc.androidDevice.recents")}
             </button>
           </div>
           <div className="text-center text-[11px] leading-relaxed text-ink-secondary">
-            Click to tap, drag or use a trackpad to scroll, and type after selecting a field.
+            {t("misc.androidDevice.controlHint")}
           </div>
         </>
       )}
@@ -322,26 +324,22 @@ export function AndroidDevicePanel({ status }: { status: AndroidDeviceStatus }) 
 
       <div className="rounded-xl bg-card p-4">
         <div className="flex items-center gap-2 text-[13px] font-medium text-ink">
-          <Usb size={15} className="text-accent" /> First-time USB setup
+          <Usb size={15} className="text-accent" /> {t("misc.androidDevice.setupTitle")}
         </div>
         <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-[11.5px] leading-relaxed text-ink-secondary">
-          <li>Connect the phone with a data-capable USB cable and keep it unlocked.</li>
+          <li>{t("misc.androidDevice.setupStep1")}</li>
           <li>
-            Enable Developer options by tapping <span className="text-ink">Build number</span> seven times in
-            About phone, then turn on <span className="text-ink">USB debugging</span>.
+            {t("misc.androidDevice.setupStep2")}
           </li>
           <li>
-            Accept <span className="text-ink">Allow USB debugging</span> on the phone. You can choose Always allow
-            for this trusted computer.
+            {t("misc.androidDevice.setupStep3")}
           </li>
         </ol>
         <div className="mt-2 text-[11px] leading-relaxed text-ink-secondary">
-          Agent control uses this same authorized USB connection. No phone companion app, account, Tailscale, or
-          wireless pairing is needed.
+          {t("misc.androidDevice.setupNote")}
         </div>
         <div className="mt-2 rounded-lg bg-inset px-3 py-2 text-[11px] leading-relaxed text-ink-secondary">
-          Once connected, ask any compatible Maus to open an Android app or complete a task on your phone. The
-          bundled Phone Harness skill loads automatically for phone requests.
+          {t("misc.androidDevice.setupTryIt")}
         </div>
       </div>
     </div>

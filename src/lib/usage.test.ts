@@ -91,8 +91,8 @@ describe("usage formatting", () => {
   });
 
   it("captions cost by billing", () => {
-    expect(costCaption("subscription")).toMatch(/not billed/);
-    expect(costCaption("metered")).toMatch(/API key/);
-    expect(costCaption(undefined)).toMatch(/reported/);
+    expect(costCaption("subscription")).toMatch(/不再单独扣费/);
+    expect(costCaption("metered")).toMatch(/API 密钥/);
+    expect(costCaption(undefined)).toMatch(/引擎上报/);
   });
 });

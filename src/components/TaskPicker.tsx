@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import { COMPACT_BUBBLE } from "@/lib/compact-chip";
 import { formatTaskTokens } from "@/lib/usage";
 import { nextRename } from "@/lib/rename";
+import { useT } from "@/i18n";
 
 /** Click-to-switch used to close this menu immediately, which unmounted the
  * row before a double-click (or right-click) could start a rename. Linger
@@ -81,6 +82,7 @@ function ConversationTaskPicker({
   onRename: (threadId: string, title: string) => void;
   onDelete: (threadId: string) => void;
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -172,14 +174,14 @@ function ConversationTaskPicker({
         type="button"
         onClick={onNew}
         disabled={busy}
-        title={busy ? "Let this turn finish first" : "New task — a fresh conversation"}
+        title={busy ? t("misc.taskPicker.letTurnFinish") : t("misc.taskPicker.newTaskHint")}
         className={cn(
           "flex items-center gap-1 rounded-full border border-hairline/40 px-2.5 py-1 text-[12.5px] text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-40",
           COMPACT_BUBBLE,
         )}
       >
         <Plus size={12} className="@max-4xl/chathead:size-[14px]" />
-        <span className="@max-4xl/chathead:hidden">Task</span>
+        <span className="@max-4xl/chathead:hidden">{t("misc.taskPicker.task")}</span>
       </button>
     );
   }
@@ -201,8 +203,8 @@ function ConversationTaskPicker({
   const currentLabel = u ? formatTaskTokens(u.input + u.output) : null;
   const switchTitle =
     u && currentLabel
-      ? `Switch task · ${currentLabel} (${u.input.toLocaleString()} in · ${u.output.toLocaleString()} out)`
-      : "Switch task";
+      ? t("misc.taskPicker.switchWithUsage", { tokens: currentLabel, input: u.input.toLocaleString(), output: u.output.toLocaleString() })
+      : t("misc.taskPicker.switch");
   const visible = filterTasks(tasks, query);
   const looking = query.trim();
 
@@ -220,7 +222,7 @@ function ConversationTaskPicker({
           COMPACT_BUBBLE,
         )}
       >
-        <span className="truncate @max-4xl/chathead:hidden">{current?.title ?? "Task"}</span>
+        <span className="truncate @max-4xl/chathead:hidden">{current?.title ?? t("misc.taskPicker.task")}</span>
         {/* folded: just the count in the bubble — the title rides the tooltip */}
         <span className="shrink-0 tabular-nums opacity-60 @max-4xl/chathead:opacity-100">{tasks.length}</span>
         <ChevronDown size={12} className="shrink-0 @max-4xl/chathead:hidden" />
@@ -316,7 +318,7 @@ function ConversationTaskPicker({
                         startRename(task);
                       }}
                       className="min-w-0 flex-1 text-left"
-                      title={TASK_RENAME_HINT}
+                      title={t("misc.taskPicker.clickToSwitch")}
                     >
                       <div className="truncate text-[13px] text-ink">{task.title}</div>
                       <div className="text-[11px] text-ink-secondary">
@@ -340,8 +342,8 @@ function ConversationTaskPicker({
                     type="button"
                     onClick={() => onDelete(task.threadId)}
                     disabled={busy && active}
-                    aria-label="Delete task"
-                    title="Delete this task and its conversation"
+                    aria-label={t("misc.taskPicker.delete")}
+                    title={t("misc.taskPicker.deleteTitle")}
                     className="rounded p-1 text-ink-secondary opacity-0 hover:bg-raised hover:text-danger group-hover:opacity-100 disabled:opacity-20"
                   >
                     <Trash2 size={13} />
@@ -359,7 +361,7 @@ function ConversationTaskPicker({
             disabled={busy}
             className="mt-1 flex w-full items-center gap-2 border-t border-hairline/40 px-3 py-2 text-left text-[13px] text-ink hover:bg-raised/50 disabled:opacity-40"
           >
-            <Plus size={13} className="text-ink-secondary" /> New task
+            <Plus size={13} className="text-ink-secondary" /> {t("misc.taskPicker.newTask")}
           </button>
         </div>
       )}

@@ -416,7 +416,7 @@ describe("phone setup flow", () => {
 
   it("turns a disabled start result into a stable actionable error", () => {
     expect(companionStartFailure({ enabled: true })).toBeNull();
-    expect(companionStartFailure({ enabled: false })).toContain("Advanced & troubleshooting");
+    expect(companionStartFailure({ enabled: false })).toContain("故障排查");
     expect(companionStartFailure({ enabled: false, error: "Port 8811 is already in use" })).toBe(
       "Port 8811 is already in use",
     );
@@ -434,7 +434,7 @@ describe("phone setup flow", () => {
       pairing: fresh,
     }, null, 1_000)).toBeNull();
     expect(companionPairingOpenFailure({ enabled: true, pairing: null }, null, 1_000)).toContain(
-      "Phone pairing did not open",
+      "手机配对未能打开",
     );
     expect(companionPairingOpenFailure({
       enabled: true,
@@ -444,11 +444,11 @@ describe("phone setup flow", () => {
     expect(companionPairingOpenFailure({
       enabled: true,
       pairing: fresh,
-    }, token, 1_000)).toContain("Phone pairing did not open");
+    }, token, 1_000)).toContain("手机配对未能打开");
     expect(companionPairingOpenFailure({
       enabled: true,
       pairing: { ...fresh, expiresAt: 999 },
-    }, null, 1_000)).toContain("Phone pairing did not open");
+    }, null, 1_000)).toContain("手机配对未能打开");
   });
 
   it("unwraps Electron IPC account errors without exposing channel machinery", () => {

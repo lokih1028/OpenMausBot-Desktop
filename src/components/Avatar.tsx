@@ -17,6 +17,7 @@ import { MAUS_COLORS, type MausColor, type MausMotion, type MausState } from "@/
 import { CursorAvatar, type CursorAvatarHandle } from "./CursorAvatar";
 import { botAvatarProfile, type BotAvatarCrop } from "../../shared/bot-avatar";
 import { MASCOT_BODIES, botMascotBody, type MascotBodyId } from "../../shared/mascot-bodies";
+import { useT } from "@/i18n";
 
 export const EYE_SCALE = 1.12;
 export const MOUTH_WEIGHT = 11;
@@ -241,6 +242,7 @@ export function resolveBotAvatarOutcome(params: {
  * so an old/corrupt profile can never leave a broken-image icon in the app.
  */
 export function BotAvatar({ bot, size = 44, label, ...mascotProps }: BotAvatarProps) {
+  const { t } = useT();
   const profile = botAvatarProfile(bot);
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -273,7 +275,7 @@ export function BotAvatar({ bot, size = 44, label, ...mascotProps }: BotAvatarPr
   return (
     <img
       src={profile.avatarUrl}
-      alt={label ?? (bot.name ? `${bot.name} avatar` : "Bot avatar")}
+      alt={label ?? (bot.name ? t("misc.avatar.alt", { name: bot.name }) : t("misc.avatar.aBotAvatar"))}
       width={size}
       height={size}
       draggable={false}

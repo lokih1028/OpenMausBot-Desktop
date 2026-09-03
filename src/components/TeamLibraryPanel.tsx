@@ -1,3 +1,4 @@
+import { useT } from "@/i18n";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/cn";
 import { teamImportPreview, type PendingTeamImport } from "@/lib/team-import";
@@ -127,6 +128,7 @@ export function TeamLibraryPanel({
   returnFocusRef: React.RefObject<HTMLButtonElement | null>;
   initialUrl?: string;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const dialogRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -373,7 +375,7 @@ export function TeamLibraryPanel({
         .map((candidate, index) => ({
           key: `dir-${candidate.slug}`,
           name: candidate.name,
-          title: candidate.category || "Community bot",
+          title: candidate.category || t("team.communityBot"),
           description: candidate.prompt,
           appearance: { color: DIRECTORY_COLORS[index % DIRECTORY_COLORS.length] },
         }));
@@ -444,7 +446,7 @@ export function TeamLibraryPanel({
                   }}
                   disabled={importing}
                   className="rounded-lg p-1.5 text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-50"
-                  aria-label="Back to teams"
+                  aria-label={t("team.backToTeams")}
                 >
                   <ArrowLeft size={18} />
                 </button>
@@ -466,7 +468,7 @@ export function TeamLibraryPanel({
               <button
                 onClick={() => void openExternal(catalog?.repositoryUrl ?? COMMUNITY_TEAMS_REPOSITORY)}
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[12.5px] text-ink-secondary hover:bg-raised hover:text-ink"
-                title="Open the community teams repository"
+                title={t("team.openRepoTitle")}
               >
                 <Github size={16} />
                 <span className="max-sm:hidden">Community repo</span>
@@ -477,7 +479,7 @@ export function TeamLibraryPanel({
               onClick={onClose}
               disabled={importing}
               className="rounded-lg p-2 text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-50"
-              aria-label="Close teams"
+              aria-label={t("team.closeTeams")}
             >
               <X size={21} />
             </button>
@@ -508,7 +510,7 @@ export function TeamLibraryPanel({
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-[14px] font-medium text-ink">{member.name}</div>
-                      <div className="mt-0.5 truncate text-[12.5px] text-ink-secondary">{member.title || "General assistant"}</div>
+                      <div className="mt-0.5 truncate text-[12.5px] text-ink-secondary">{member.title || t("team.generalAssistant")}</div>
                     </div>
                   </div>
                 ))}
@@ -551,11 +553,11 @@ export function TeamLibraryPanel({
                 {importing
                   ? "Loading…"
                   : pending.kind === "package" && currentBotCount === 0
-                    ? "Activate playbook"
+                    ? t("team.activatePlaybook")
                     : currentBotCount === 0
                     ? "Load team"
                     : importMode === "replace"
-                      ? "Replace team"
+                      ? t("team.replaceTeam")
                       : "Add team"}
               </button>
             </footer>
@@ -563,7 +565,7 @@ export function TeamLibraryPanel({
         ) : (
           <>
             <div className="flex flex-col gap-3 px-6 pb-4 pt-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-              <div className="flex w-fit rounded-xl bg-raised/70 p-1" role="tablist" aria-label="Team source">
+              <div className="flex w-fit rounded-xl bg-raised/70 p-1" role="tablist" aria-label={t("team.teamSource")}>
                 <button
                   role="tab"
                   aria-selected={tab === "explore"}
@@ -613,8 +615,8 @@ export function TeamLibraryPanel({
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search teams"
-                    aria-label="Search teams"
+                    placeholder={t("team.searchTeams")}
+                    aria-label={t("team.searchTeams")}
                     className="min-w-0 flex-1 bg-transparent text-[14px] text-ink placeholder:text-ink-secondary focus:outline-none"
                   />
                 </label>
@@ -625,7 +627,7 @@ export function TeamLibraryPanel({
               {tab === "explore" && (
                 <div>
                   <div className="mb-3 text-[12px] font-medium text-ink-secondary">
-                    {search ? "Search results" : "Community teams"}
+                    {search ? t("team.searchResults") : t("team.communityTeams")}
                   </div>
                   {catalogLoading && (
                     <div className="flex items-center justify-center gap-2 py-24 text-[13px] text-ink-secondary">
@@ -723,7 +725,7 @@ export function TeamLibraryPanel({
                           onChange={(event) => setGithubUrl(event.target.value)}
                           onKeyDown={(event) => event.key === "Enter" && void loadGithubTeam()}
                           placeholder="github.com/owner/repo"
-                          aria-label="GitHub team URL"
+                          aria-label={t("team.githubUrlAria")}
                           className="min-w-0 flex-1 rounded-xl bg-raised/80 px-3 py-2.5 text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none"
                         />
                         <button
@@ -754,7 +756,7 @@ export function TeamLibraryPanel({
                       onChange={(event) => setScoutFolder(event.target.value)}
                       onKeyDown={(event) => event.key === "Enter" && scoutTarget && void runScout(scoutTarget)}
                       placeholder="/path/to/your/project"
-                      aria-label="Project folder to scout"
+                      aria-label={t("team.scoutFolderAria")}
                       className="min-w-0 flex-1 rounded-xl bg-raised/80 px-3 py-2.5 text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none"
                     />
                     {Boolean(window.ogb?.pickFolder) && (
@@ -847,7 +849,7 @@ export function TeamLibraryPanel({
                                 <button
                                   onClick={() => void openExternal(candidate.detailUrl)}
                                   aria-label={`Open ${candidate.name} on botdirectory.ai`}
-                                  title="Read this bot's page before adding it"
+                                  title={t("team.readBotPage")}
                                   className="rounded-lg p-1.5 text-ink-secondary hover:bg-raised hover:text-ink"
                                 >
                                   <ExternalLink size={14} />
@@ -862,7 +864,7 @@ export function TeamLibraryPanel({
                         <input
                           value={roomName}
                           onChange={(event) => setRoomName(event.target.value)}
-                          aria-label="Project channel name"
+                          aria-label={t("team.projectChannelName")}
                           className="min-w-0 flex-1 rounded-xl bg-raised/80 px-3 py-2.5 text-[13px] text-ink placeholder:text-ink-secondary focus:outline-none"
                         />
                         <button
@@ -871,7 +873,7 @@ export function TeamLibraryPanel({
                           className="flex shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 text-[13.5px] font-medium text-white hover:bg-accent/90 disabled:opacity-60"
                         >
                           {creating && <Loader2 size={15} className="animate-spin" />}
-                          {creating ? "Creating…" : "Create project channel"}
+                          {creating ? t("team.creatingChannel") : t("team.createProjectChannel")}
                         </button>
                       </div>
                       <p className="mt-2 text-[12px] text-ink-secondary">

@@ -10,12 +10,14 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
+import { useT } from "@/i18n";
 import { useDesktopCapabilities } from "./DesktopCapabilities";
 
 const LINUX_GUIDE_URL =
   "https://github.com/milind-soni/OpenMausBot/blob/main/docs/linux-desktop.md#enable-local-control";
 
 export function LinuxLocalControl() {
+  const { t } = useT();
   const { capabilities } = useDesktopCapabilities();
   const local = capabilities.localComputer;
   const [pending, setPending] = useState<"enable" | "disable" | "retry" | null>(null);
@@ -69,7 +71,7 @@ export function LinuxLocalControl() {
                   : "bg-raised text-ink-secondary",
           )}
         >
-          {ready ? "Ready" : waylandSafetyBlocked ? "Unavailable on Wayland" : local.enabled ? "Needs attention" : "Off"}
+          {ready ? "Ready" : waylandSafetyBlocked ? t("localComputer.waylandBlockedShort") : local.enabled ? t("localComputer.needsAttention") : "Off"}
         </span>
       </div>
 
@@ -113,7 +115,7 @@ export function LinuxLocalControl() {
           </div>
           {local.driverPath && (
             <div className="mt-2 break-all font-mono text-[10px] text-ink-secondary/80" title={local.driverPath}>
-              {bundledDriver ? "Bundled Cua Driver" : local.driverPath}
+              {bundledDriver ? t("localComputer.bundledDriver") : local.driverPath}
               {local.driverVersion ? ` · ${local.driverVersion}` : ""}
             </div>
           )}
@@ -164,7 +166,7 @@ export function LinuxLocalControl() {
         onClick={() => window.open(LINUX_GUIDE_URL, "_blank", "noopener,noreferrer")}
         className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] text-ink-secondary hover:bg-raised hover:text-ink"
       >
-        {capabilities.host.packaged ? "Local control guide" : "Driver setup and troubleshooting"}{" "}
+        {capabilities.host.packaged ? t("localComputer.guide") : t("localComputer.driverGuide")}{" "}
         <ExternalLink size={11} />
       </button>
     </section>

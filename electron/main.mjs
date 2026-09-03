@@ -987,12 +987,12 @@ function buildErrorPage({ allPortsOccupied }) {
   const serverLogPath = path.join(LOG_DIR, "server.log");
   const serverLogHref = pathToFileURL(serverLogPath).href;
   const reason = allPortsOccupied
-    ? "Every OpenMausBot port answered health checks from another process — likely a second copy of the app, or another program on ports 8799–28799. Quit that program, then quit and reopen OpenMausBot."
-    : "The background server didn't come up in time — this is usually slow startup, not a port conflict. Quit and reopen OpenMausBot.";
+    ? "所有 OpenMausBot 端口都被其他进程占用（可能是打开了第二个实例或 8799–28799 端口被占用）。请关闭对应程序后重新打开 OpenMausBot。"
+    : "后台服务未能及时启动（通常是启动较慢而非端口冲突）。请退出并重新打开 OpenMausBot。";
   return (
     "data:text/html;charset=utf-8," +
     encodeURIComponent(
-      `<body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#070707;color:#fcfcfc;font:15px -apple-system,system-ui"><div style="text-align:center;max-width:360px"><div style="font-size:40px">🐭</div><h2 style="font-weight:600;margin:12px 0 6px">Couldn't start the bot server</h2><p style="color:#fcfcfc99;line-height:1.5">${escapeHtml(reason)} If it keeps happening, check <a target="_blank" rel="noopener" href="${serverLogHref}" style="color:#fcfcfc">${escapeHtml(serverLogPath)}</a>.</p></div></body>`,
+      `<body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#070707;color:#fcfcfc;font:15px -apple-system,system-ui"><div style="text-align:center;max-width:360px"><div style="font-size:40px">🐭</div><h2 style="font-weight:600;margin:12px 0 6px">机器人服务未能启动</h2><p style="color:#fcfcfc99;line-height:1.5">${escapeHtml(reason)} 如果问题持续，请查看日志：<a target="_blank" rel="noopener" href="${serverLogHref}" style="color:#fcfcfc">${escapeHtml(serverLogPath)}</a>。</p></div></body>`,
     )
   );
 }
@@ -1041,11 +1041,11 @@ function desktopViewerErrorPage(message, retryUrl) {
       .replaceAll(">", "&gt;");
   return (
     "data:text/html;charset=utf-8," +
-    encodeURIComponent(`<!doctype html><meta name="color-scheme" content="dark"><title>Desktop unavailable</title>
+    encodeURIComponent(`<!doctype html><meta name="color-scheme" content="dark"><title>桌面不可用</title>
       <body style="margin:0;display:grid;place-items:center;height:100vh;background:#070707;color:#f5f5f5;font:14px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
-        <main style="max-width:420px;padding:32px;text-align:center"><h2 style="margin:0 0 10px;font-size:18px">Couldn't open the live desktop</h2>
+        <main style="max-width:420px;padding:32px;text-align:center"><h2 style="margin:0 0 10px;font-size:18px">无法打开实时桌面</h2>
         <p style="margin:0 0 20px;color:#a1a1aa;line-height:1.5">${escape(message)}</p>
-        <a href="${escape(retryUrl)}" target="_blank" rel="noreferrer" style="display:inline-block;border-radius:9px;background:#fff;color:#111;padding:9px 14px;text-decoration:none;font-weight:600">Open in browser</a></main>
+        <a href="${escape(retryUrl)}" target="_blank" rel="noreferrer" style="display:inline-block;border-radius:9px;background:#fff;color:#111;padding:9px 14px;text-decoration:none;font-weight:600">在浏览器中打开</a></main>
       </body>`)
   );
 }
@@ -1054,7 +1054,7 @@ function openDesktopViewer(owner, rawUrl, rawTitle, contextId) {
   if (!owner || owner.isDestroyed()) throw new Error("The OpenMausBot window is unavailable");
   const url = desktopViewerUrl(rawUrl);
   const titleCandidate = Object.prototype.toString.call(rawTitle) === "[object String]" ? rawTitle.trim() : "";
-  const title = titleCandidate ? titleCandidate.slice(0, 80) : "Live desktop";
+  const title = titleCandidate ? titleCandidate.slice(0, 80) : "实时桌面";
 
   const nextContextId =
     Object.prototype.toString.call(contextId) === "[object String]" ? contextId.slice(0, 120) : null;
@@ -1621,20 +1621,20 @@ function createWindow() {
     }
     if (params.linkURL) {
       menuItems.push(
-        { label: "Copy Link", click: () => clipboard.writeText(params.linkURL) },
+        { label: "复制链接", click: () => clipboard.writeText(params.linkURL) },
         { type: "separator" },
       );
     }
     menuItems.push(
-      { label: "Undo", role: "undo", enabled: params.editFlags.canUndo },
-      { label: "Redo", role: "redo", enabled: params.editFlags.canRedo },
+      { label: "撤销", role: "undo", enabled: params.editFlags.canUndo },
+      { label: "重做", role: "redo", enabled: params.editFlags.canRedo },
       { type: "separator" },
-      { label: "Cut", role: "cut", enabled: params.editFlags.canCut },
-      { label: "Copy", role: "copy", enabled: params.editFlags.canCopy },
-      { label: "Paste", role: "paste", enabled: params.editFlags.canPaste },
-      { label: "Paste and Match Style", role: "pasteAndMatchStyle", enabled: params.editFlags.canPaste },
+      { label: "剪切", role: "cut", enabled: params.editFlags.canCut },
+      { label: "复制", role: "copy", enabled: params.editFlags.canCopy },
+      { label: "粘贴", role: "paste", enabled: params.editFlags.canPaste },
+      { label: "粘贴并匹配样式", role: "pasteAndMatchStyle", enabled: params.editFlags.canPaste },
       { type: "separator" },
-      { label: "Select All", role: "selectAll", enabled: params.editFlags.canSelectAll },
+      { label: "全选", role: "selectAll", enabled: params.editFlags.canSelectAll },
     );
     Menu.buildFromTemplate(menuItems).popup({ window: win, frame: params.frame });
   });
@@ -1796,7 +1796,7 @@ ipcMain.handle("engine:open-terminal", localOnly("engine:open-terminal", async (
 ipcMain.handle("desktop:pick-folder", localOnly("desktop:pick-folder", async (event, current) => {
   const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
   const result = await dialog.showOpenDialog(win, {
-    title: "Choose a working folder",
+    title: "选择工作文件夹",
     properties: ["openDirectory", "createDirectory"],
     ...(typeof current === "string" && current ? { defaultPath: current } : {}),
   });
@@ -1810,9 +1810,9 @@ ipcMain.handle("desktop:export-diagnostics", localOnly("desktop:export-diagnosti
   const owner = BrowserWindow.fromWebContents(event.sender) ?? undefined;
   const report = await gatherDiagnostics();
   const result = await dialog.showSaveDialog(owner, {
-    title: "Export diagnostics",
+    title: "导出诊断信息",
     defaultPath: diagnosticsFileName(),
-    filters: [{ name: "Text", extensions: ["txt"] }],
+    filters: [{ name: "文本", extensions: ["txt"] }],
   });
   if (result.canceled || !result.filePath) return null;
   if (process.platform === "win32") {
@@ -1844,10 +1844,10 @@ ipcMain.handle("desktop:save-file", localOnly("desktop:save-file", async (event,
     const parent = BrowserWindow.fromWebContents(event.sender);
     const defaultPath = await defaultSaveName(app.getPath("downloads"), defaultName);
     const choice = await dialog.showSaveDialog(parent ?? undefined, {
-      title: "Where do you want to save it?",
-      message: "Where do you want to save it?",
+      title: "保存到哪里？",
+      message: "保存到哪里？",
       defaultPath,
-      buttonLabel: "Save",
+      buttonLabel: "保存",
       properties: ["createDirectory", "showOverwriteConfirmation"],
     });
     // Cancelling is a decision, not a failure — the bubble stays quiet.

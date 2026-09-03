@@ -529,7 +529,7 @@ function createLinuxCuaRuntime({
     enabled: false,
     status: "disabled",
     reasonCode: "opt-in-required",
-    message: "Local control is off until you enable the beta.",
+    message: "本地控制处于关闭状态，请先开启测试版。",
     ownerPid: processId,
   };
 
@@ -647,7 +647,7 @@ function createLinuxCuaRuntime({
       return unavailable(
         "disabled",
         "opt-in-required",
-        "Local control is off until you enable the beta.",
+        "本地控制处于关闭状态，请先开启测试版。",
       );
     }
     if (active?.ready) return connection;
@@ -850,7 +850,7 @@ function createLinuxCuaRuntime({
     unavailable(
       disable ? "disabled" : "stopped",
       disable ? "opt-in-required" : quit ? "app-stopped" : "runtime-stopped",
-      disable ? "Local control is disabled." : "Local control is not running.",
+      disable ? "本地控制已禁用。" : "本地控制未在运行。",
       active ? { generation: active.generation } : {},
     );
     const owned = active;
@@ -871,7 +871,7 @@ function createLinuxCuaRuntime({
         : unavailable(
             "disabled",
             "opt-in-required",
-            "Local control is off until you enable the beta.",
+            "本地控制处于关闭状态，请先开启测试版。",
           );
     },
     async enable() {

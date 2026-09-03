@@ -305,7 +305,7 @@ interface PhonePairingWindowSnapshot {
 }
 
 const PAIRING_OPEN_FAILURE_MESSAGE =
-  "Phone pairing did not open. Open Advanced & troubleshooting, confirm Phone access is on, then try again.";
+  "手机配对未能打开。打开「高级与故障排查」，确认手机接入已开启，然后再试一次。";
 
 export function companionPairingOpenFailure(
   companion: PhonePairingWindowSnapshot & { enabled: boolean; error?: string },
@@ -402,7 +402,7 @@ export function startNonOverlappingPhoneSetupPoll<T>(
 }
 
 const START_FAILURE_MESSAGE =
-  "Phone access could not start. Open Advanced & troubleshooting, then try turning Phone access on again.";
+  "手机接入未能启动。打开「高级与故障排查」，再次尝试开启手机接入。";
 
 export function companionStartFailure(
   companion: Pick<PhoneSetupCompanionSnapshot, "enabled"> & { error?: string },

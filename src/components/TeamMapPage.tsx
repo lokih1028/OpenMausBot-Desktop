@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ArrowRight, BookOpen, Crown, Loader2, Network, Radio, RefreshCw, Save, X } from "lucide-react";
 
 import { MausAvatar } from "./Avatar";
+import { useT } from "@/i18n";
 import { api, formatTime, useStore, type Bot } from "@/state/store";
 import { normalizeState } from "@/lib/mascot";
 import {
@@ -24,6 +25,7 @@ const statusTone = {
 
 function BotNode({ bot, chief = false }: { bot: Bot; chief?: boolean }) {
   const { dispatch } = useStore();
+  const { t } = useT();
   const status = teamMapStatus(bot);
   return (
     <button
@@ -42,7 +44,7 @@ function BotNode({ bot, chief = false }: { bot: Bot; chief?: boolean }) {
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[13.5px] font-semibold text-ink">{bot.name}</span>
-          {chief && <Crown size={12} className="shrink-0 text-warning" aria-label="Chief of Staff" />}
+          {chief && <Crown size={12} className="shrink-0 text-warning" aria-label={t("team.chiefBadge")} />}
         </span>
         <span className="block truncate text-[11.5px] text-ink-secondary">{bot.title || bot.modelSelection.model}</span>
       </span>
@@ -96,6 +98,7 @@ interface SectionContextResponse {
 }
 
 function SectionContextDialog({ section, label, onClose }: { section: string; label: string; onClose: () => void }) {
+  const { t } = useT();
   const dialogRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const onCloseRef = useRef(onClose);
@@ -229,7 +232,7 @@ function SectionContextDialog({ section, label, onClose }: { section: string; la
           <button
             onClick={requestClose}
             disabled={saving}
-            aria-label="Close shared context"
+            aria-label={t("team.closeContext")}
             className="flex size-9 shrink-0 items-center justify-center rounded-lg text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-40"
           >
             <X size={19} />
@@ -239,7 +242,7 @@ function SectionContextDialog({ section, label, onClose }: { section: string; la
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
           {loading ? (
             <div className="flex min-h-[260px] items-center justify-center text-ink-secondary">
-              <Loader2 size={20} className="animate-spin" aria-label="Loading shared context" />
+              <Loader2 size={20} className="animate-spin" aria-label={t("team.loadingContext")} />
             </div>
           ) : (
             <>
@@ -286,6 +289,7 @@ function SectionContextDialog({ section, label, onClose }: { section: string; la
 
 export function TeamMapPage() {
   const { state } = useStore();
+  const { t } = useT();
   const [snapshot, setSnapshot] = useState<TeamMapSnapshot>(EMPTY_TEAM_MAP_SNAPSHOT);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -336,7 +340,7 @@ export function TeamMapPage() {
           onClick={() => void refresh(true)}
           disabled={refreshing}
           className="rounded-lg border border-hairline/50 bg-card p-2 text-ink-secondary hover:bg-raised hover:text-ink disabled:opacity-50"
-          aria-label="Refresh team map"
+          aria-label={t("team.refreshMap")}
           title="Refresh"
         >
           <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
@@ -348,7 +352,7 @@ export function TeamMapPage() {
           {[
             [bots.length, "Bots"],
             [working, "Working"],
-            [waiting, "Waiting on you"],
+            [waiting, t("team.waitingOnYou")],
           ].map(([value, label]) => (
             <div key={label} className="rounded-xl border border-hairline/40 bg-panel px-3.5 py-3">
               <div className="text-[18px] font-semibold tabular-nums text-ink">{value}</div>
@@ -369,7 +373,7 @@ export function TeamMapPage() {
                     onClick={() => setContextEditor({ section: section.key, label: section.name })}
                     className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10.5px] font-medium text-ink-secondary hover:bg-raised hover:text-ink"
                     aria-label={`Edit ${section.name} shared context`}
-                    title="Shared context"
+                    title={t("team.sharedContext")}
                   >
                     <BookOpen size={11} /> Context
                   </button>

@@ -1,4 +1,5 @@
 // One-place setup for the isolated Local VM image and its shared/per-bot policy.
+import { useT } from "@/i18n";
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -101,6 +102,7 @@ function ActionButton({
 }
 
 export function LocalComputerSection() {
+  const { t } = useT();
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<Action | null>(null);
@@ -193,7 +195,7 @@ export function LocalComputerSection() {
         body: JSON.stringify({ localVm: { mode, maxInstances } }),
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error ?? "Could not save the Local VM isolation policy");
+      if (!response.ok) throw new Error(body.error ?? t("localComputer.savePolicyFailedUi"));
       setStatus((current) => current ? { ...current, mode, max_instances: maxInstances } : current);
       await refresh();
     } catch (e) {
@@ -240,11 +242,11 @@ export function LocalComputerSection() {
             {loading
               ? "Checking…"
               : unavailable
-                ? "Status unavailable"
+                ? t("localComputer.statusUnavailableUi")
                 : perBot && headerReady
-                  ? "Ready for per-bot desktops"
+                  ? t("localComputer.perBotReadyUi")
                   : perBotRuntimeUnsupported
-                    ? "Per-bot mode requires Docker or Podman"
+                    ? t("localComputer.perBotRuntimeRequiredUi")
                   : ready
                     ? "Ready"
                     : (status?.problem ?? "Not ready")}
@@ -296,11 +298,11 @@ export function LocalComputerSection() {
         </div>
         <div className="mt-3 flex items-center justify-between gap-3">
           <div>
-            <div className="text-[13px] text-ink">Maximum per-bot desktops</div>
+            <div className="text-[13px] text-ink">{t("localComputer.maxDesktopsUi")}</div>
             <div className="text-[11.5px] text-ink-secondary">Limits storage and host resource use; each running desktop may use up to 4 GB and 2 CPUs.</div>
           </div>
           <select
-            aria-label="Maximum per-bot desktops"
+            aria-label={t("localComputer.maxDesktopsAriaUi")}
             value={status?.max_instances ?? 2}
             disabled={!status || policyPending}
             onChange={(event) => void savePolicy(status?.mode ?? "shared", Number(event.target.value))}
@@ -314,7 +316,7 @@ export function LocalComputerSection() {
 
       <Card title="Setup" subtitle="Once a container runtime is open, OpenMausBot prepares Cua and the VM for you.">
         <div className="flex flex-col gap-4">
-          <Step n={1} title="Install a container runtime" done={Boolean(status?.runtime)}>
+          <Step n={1} title={t("localComputer.installRuntimeUi")} done={Boolean(status?.runtime)}>
             <div className="text-[13px] leading-relaxed text-ink-secondary">
               Podman and Colima are free. Docker Desktop may require a paid licence for larger companies and government use.
             </div>
@@ -329,7 +331,7 @@ export function LocalComputerSection() {
 
           <Step
             n={2}
-            title={status?.runtime && !status.daemonUp ? `Open and start ${status.runtime}` : "Start the container runtime"}
+            title={status?.runtime && !status.daemonUp ? `Open and start ${status.runtime}` : t("localComputer.startRuntimeUi")}
             done={Boolean(status?.daemonUp)}
           >
             {!status?.runtime ? null : c?.runtimeStart ? (
@@ -348,7 +350,7 @@ export function LocalComputerSection() {
 
           <Step
             n={4}
-            title={perBot ? "Create a private desktop from each bot's Computer panel" : needsRecreate ? "Replace the older or unsafe VM" : "Create and start the Local VM"}
+            title={perBot ? t("localComputer.perBotCreateUi") : needsRecreate ? t("localComputer.replaceUnsafeUi") : t("localComputer.createStartUi")}
             done={!perBot && ready}
           >
             {perBot ? (
@@ -395,7 +397,7 @@ export function LocalComputerSection() {
       )}
 
       <Card
-        title="Safety and storage"
+        title={t("localComputer.safetyStorageUi")}
         subtitle={perBot
           ? `Cua Driver operates only each VM's desktop. Every bot gets a private host folder mounted at ${status?.workspace_guest_path ?? "/home/cua/workspace"}; its files and browser profile survive VM replacement. Viewers bind only to loopback, and exact bot-derived targets prevent one bot from attaching to another bot's container. Each VM keeps the existing 4 GB, 2 CPU, 512-process and dropped-capability limits. VMs can still reach the internet.`
           : `Cua Driver operates only the VM's desktop. Exactly one private host folder is mounted at ${status?.workspace_guest_path ?? "/home/cua/workspace"}; files and browser sign-ins there survive VM replacement, while everything elsewhere in the VM remains disposable. The password-protected viewer is available only on this machine. Docker and Podman runs are limited to 4 GB memory, 2 CPUs and 512 processes; all Linux capabilities are dropped except the two the desktop supervisor needs to switch to its unprivileged user. The VM can still reach the internet, and bots share it one at a time.`}
@@ -408,7 +410,7 @@ export function LocalComputerSection() {
               </ActionButton>
             )}
             <ActionButton action="remove" pending={pending} onClick={() => void act("remove")} danger>
-              <Trash2 size={12} /> {perBot ? "Delete legacy shared VM" : "Delete VM"}
+              <Trash2 size={12} /> {perBot ? t("localComputer.deleteLegacyUi") : "Delete VM"}
             </ActionButton>
           </div>
         )}

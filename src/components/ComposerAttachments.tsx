@@ -15,6 +15,7 @@ import {
   type PasteAttachment,
 } from "@/lib/composer-attachments";
 import { AttachmentPreviewDialog, previewImage, type PreviewImage } from "./AttachmentPreview";
+import { useT } from "@/i18n";
 
 /** Electron 32 removed File.path — only the preload can name a file. */
 export function pathForFile(file: File): string {
@@ -39,6 +40,7 @@ export function ComposerAttachments({
   notice: string | null;
   onNotice: (notice: string | null) => void;
 }) {
+  const { t } = useT();
   const [dragging, setDragging] = useState(false);
   const [preview, setPreview] = useState<PreviewImage | null>(null);
   // dragenter/dragleave fire once per element crossed, so the overlay
@@ -102,7 +104,7 @@ export function ComposerAttachments({
       {dragging && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-10">
           <div className="rounded-2xl border-2 border-dashed border-accent/70 bg-panel/90 px-8 py-6 text-[14px] font-medium text-ink shadow-2xl">
-            Drop to attach — the bot gets the file path
+            {t("misc.attachments.dropToAttach")}
           </div>
         </div>
       )}
@@ -112,7 +114,7 @@ export function ComposerAttachments({
           <span className="min-w-0 flex-1">{notice}</span>
           <button
             onClick={() => onNotice(null)}
-            aria-label="Dismiss"
+            aria-label={t("misc.attachments.dismiss")}
             className="shrink-0 rounded p-0.5"
           >
             <X size={12} />
@@ -141,11 +143,11 @@ export function ComposerAttachments({
                   type="button"
                   onClick={() => onDisplayInChatBox(a)}
                   className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/25 bg-accent/5 px-2 py-1.5 text-[10.5px] font-medium text-accent-text transition-colors hover:border-accent/50 hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
-                  aria-label="Display pasted text in chat box"
-                  title="Display in chat box"
+                  aria-label={t("misc.attachments.displayAria")}
+                  title={t("misc.attachments.display")}
                 >
                   <MessageSquareText size={12} aria-hidden="true" />
-                  <span>Display in chat box</span>
+                  <span>{t("misc.attachments.display")}</span>
                 </button>
               </Chip>
             ) : a.kind === "image" ? (
@@ -154,7 +156,7 @@ export function ComposerAttachments({
                   type="button"
                   onClick={() => setPreview(previewImage(a.path))}
                   className="flex h-[76px] w-full items-center justify-center overflow-hidden rounded-lg bg-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-                  aria-label={`Preview ${a.name}`}
+                  aria-label={t("misc.attachments.previewOf", { name: a.name })}
                 >
                   <img
                     src={attachmentImageUrl(a.path) ?? undefined}
@@ -195,6 +197,7 @@ function Chip({
   title: string;
   onRemove: () => void;
 }) {
+  const { t } = useT();
   const Icon = label === "PASTED" ? ClipboardPaste : label === "IMAGE" ? ImageIcon : FileIcon;
   return (
     <div
@@ -215,7 +218,7 @@ function Chip({
           way to drop a chip out of reach of the keyboard */}
       <button
         onClick={onRemove}
-        aria-label={`Remove ${label === "PASTED" ? "pasted text" : "file"}`}
+        aria-label={t("misc.attachments.remove")}
         className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-hairline/60 bg-panel text-ink-secondary opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
       >
         <X size={11} />

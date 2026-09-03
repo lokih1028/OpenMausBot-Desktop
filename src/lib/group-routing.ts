@@ -1,4 +1,10 @@
 import type { Bot, Group, GroupDefaultResponder } from "@/state/store";
+import { readLocale, translate } from "@/i18n/catalog";
+
+/** Localized user-facing string for non-React lib code. */
+function lib(key: string, vars?: Record<string, string | number>): string {
+  return translate(readLocale(), key, vars);
+}
 
 /** Be defensive around rooms loaded while an older server is still running,
  * and around a lead removed by another client before the group patch arrives. */
@@ -19,20 +25,20 @@ export function defaultResponderName(group: Group, members: Bot[]): string | nul
 }
 
 export function groupResponseHint(group: Group, members: Bot[]): string {
-  if (group.dm) return "Reply here to continue the bot-to-bot conversation.";
+  if (group.dm) return lib("lib.groupDmHint");
   const value = effectiveDefaultResponder(group, members);
-  if (value.kind === "everyone") return "Everyone responds unless you @mention specific bots.";
-  if (value.kind === "mentions") return "Mention a bot with @ to bring them in.";
-  const name = defaultResponderName(group, members) ?? "The lead bot";
-  return `${name} responds by default — @mention someone else to choose them instead.`;
+  if (value.kind === "everyone") return lib("lib.groupEveryoneHint");
+  if (value.kind === "mentions") return lib("lib.groupMentionsHint");
+  const name = defaultResponderName(group, members) ?? lib("lib.groupLeadFallback");
+  return lib("lib.groupLeadHint", { name });
 }
 
 export function groupComposerHint(group: Group, members: Bot[]): string {
-  if (group.dm) return "continue the conversation";
+  if (group.dm) return lib("lib.groupDmComposer");
   const value = effectiveDefaultResponder(group, members);
-  if (value.kind === "everyone") return "everyone responds";
-  if (value.kind === "mentions") return "@ to bring a bot in";
-  return `${defaultResponderName(group, members) ?? "Lead"} responds`;
+  if (value.kind === "everyone") return lib("lib.groupEveryoneComposer");
+  if (value.kind === "mentions") return lib("lib.groupMentionsComposer");
+  return lib("lib.groupLeadComposer", { name: defaultResponderName(group, members) ?? lib("lib.groupLeadFallback") });
 }
 
 /** Same routing sendGroup uses: explicit @mentions win, otherwise the

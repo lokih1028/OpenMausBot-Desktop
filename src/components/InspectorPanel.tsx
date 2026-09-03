@@ -16,10 +16,12 @@ import { cn } from "@/lib/cn";
 import { formatTime, toRows, type InspectorEntry, type InspectorPage, type InspectorRow } from "@/lib/inspector";
 import { openLiveEvents } from "@/lib/live-events";
 import type { RuntimeEvent } from "../../server/contracts.ts";
+import { useT } from "@/i18n";
 
 type Lens = "events" | "raw";
 
 export function InspectorPanel({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const threadId = bot.threadId;
   const [lens, setLens] = useState<Lens>("events");
@@ -184,12 +186,12 @@ export function InspectorPanel({ bot }: { bot: Bot }) {
     <aside className="animate-panel-in flex h-full w-[460px] shrink-0 flex-col border-l border-hairline/40 bg-panel">
       <div className="flex items-center justify-between px-4 py-3">
         <span className="flex items-center gap-2 text-[15px] font-semibold text-ink">
-          <Bug size={16} className="text-ink-secondary" /> Inspector
+          <Bug size={16} className="text-ink-secondary" /> {t("misc.inspector.title")}
         </span>
         <button
           onClick={() => dispatch({ type: "toggleInspector", open: false })}
-          aria-label="Close the Inspector"
-          title="Close the Inspector"
+          aria-label={t("misc.inspector.close")}
+          title={t("misc.inspector.close")}
           className="rounded-md p-1 text-ink-secondary hover:bg-raised hover:text-ink"
         >
           <X size={18} />
@@ -212,18 +214,18 @@ export function InspectorPanel({ bot }: { bot: Bot }) {
           ))}
         </div>
         <span className="ml-auto text-[11px] text-ink-secondary">
-          {page ? (shown < total ? `last ${shown} of ${total}` : `${shown} entries`) : "loading…"}
+          {page ? (shown < total ? t("misc.inspector.lastOf", { count: shown, total }) : t("misc.inspector.entryCount", { count: shown })) : t("misc.inspector.loading")}
         </span>
-        <button onClick={() => managedRefresh.current()} className="rounded-md p-1 text-ink-secondary hover:bg-raised hover:text-ink" title="Reload from disk">
+        <button onClick={() => managedRefresh.current()} className="rounded-md p-1 text-ink-secondary hover:bg-raised hover:text-ink" title={t("misc.inspector.reload")}>
           <RefreshCw size={14} />
         </button>
       </div>
 
       <div ref={listRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto font-mono text-[11.5px]">
-        {error && <div className="px-4 py-3 text-danger">couldn't load: {error}</div>}
+        {error && <div className="px-4 py-3 text-danger">{t("misc.inspector.loadFailed")}{error}</div>}
         {page && rows.length === 0 && !error && (
           <div className="px-4 py-6 text-ink-secondary">
-            {lens === "raw" ? "No native protocol messages recorded for this thread yet." : "No runtime events for this thread yet."}
+            {lens === "raw" ? t("misc.inspector.noNative") : t("misc.inspector.noRuntime")}
           </div>
         )}
         {rows.map((row) => (

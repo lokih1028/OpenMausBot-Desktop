@@ -43,6 +43,7 @@ import {
   replaceComposerSlashTrigger,
   type ComposerSlashCommand,
 } from "@/lib/composer-commands";
+import { useT } from "@/i18n";
 
 /** The active @mention query at the caret: the text between an `@` that
  * starts a word and the caret. null = no mention being typed. */
@@ -193,6 +194,7 @@ export function Composer({
   /** New rooms keep the composer inert until their setup is saved or skipped. */
   locked?: boolean;
 }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const { capabilities } = useDesktopCapabilities();
   // Unified target: a 1:1 bot thread or a room. In a room the @ picker
@@ -214,8 +216,8 @@ export function Composer({
       members?.find((member) => member.id === group.busyBotId)
     : bot;
   const busyName = group
-    ? (members?.find((b) => b.id === group.busyBotId)?.name ?? (group.working ? "The team" : "A bot"))
-    : (bot?.name ?? "The bot");
+    ? (members?.find((b) => b.id === group.busyBotId)?.name ?? (group.working ? t("sidebar.theTeam") : t("sidebar.aBot")))
+    : (bot?.name ?? t("composer.busyBotName"));
   // Per-thread draft: switching bots unmounts this component, so both the
   // text and its attachment chips have to outlive it (see lib/drafts).
   const draftId = group
@@ -569,6 +571,12 @@ export function Composer({
     setRecording((r) => !r);
   };
 
+  // room placeholder hint — recomputed only when the room or members change
+  const hintText = useMemo(
+    () => (group ? groupComposerHint(group, members ?? []) : ""),
+    [group, members],
+  );
+
   return (
     <div className="pointer-events-none relative px-5 pb-3">
       {/* No fill or hairline on this wrapper — those were the black frame
@@ -585,20 +593,20 @@ export function Composer({
             className="mb-2 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-[12.5px] text-danger"
           >
             <span className="min-w-0 flex-1 truncate">
-              Not sent: “{failed.text.trim() || "attachment"}”
+              {t("composer.notSent", { text: failed.text.trim() || "attachment" })}
             </span>
             <button
               type="button"
               onClick={() => retryFailedSend(failed)}
               className="shrink-0 rounded px-2 py-1 font-medium hover:bg-danger/10"
             >
-              Retry
+              {t("common.retry")}
             </button>
             <button
               type="button"
               onClick={() => forgetFailedComposerSend(draftId, failed.id)}
-              aria-label="Dismiss failed message"
-              title="Dismiss"
+              aria-label={t("composer.dismissFailed")}
+              title={t("common.dismiss")}
               className="flex size-5 shrink-0 items-center justify-center rounded hover:bg-danger/10"
             >
               <X size={13} strokeWidth={2.5} />
@@ -648,7 +656,7 @@ export function Composer({
         {mentionPickerOpen && (
           <div
             role="listbox"
-            aria-label="Tag a bot"
+            aria-label={t("composer.tagBot")}
             className="absolute bottom-full left-2 z-20 mb-2 w-72 overflow-hidden rounded-xl border border-hairline/40 bg-raised shadow-lg"
           >
             {candidates.map((peer, i) => (
@@ -676,7 +684,7 @@ export function Composer({
                   </span>
                 )}
                 <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-ink">{peer.name}</span>
-                <span className="shrink-0 text-xs text-ink-secondary">{peer.bot ? "Agent" : "Channel"}</span>
+                <span className="shrink-0 text-xs text-ink-secondary">{peer.bot ? t("composer.mentionAgent") : t("composer.mentionChannel")}</span>
               </button>
             ))}
           </div>
@@ -744,8 +752,8 @@ export function Composer({
               <button
                 type="button"
                 onClick={() => fileInput.current?.click()}
-                aria-label="Attach a file"
-                title="Attach a file"
+                aria-label={t("composer.attachFile")}
+                title={t("composer.attachFile")}
                 className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-control hover:text-ink"
               >
                 <Paperclip size={17} />
@@ -888,27 +896,27 @@ export function Composer({
           disabled={Boolean(approval) || locked}
           placeholder={
             locked
-              ? "Finish room setup to start chatting"
+              ? t("composer.finishRoomSetup")
               : approval
-              ? "Answer the approval above to continue"
+              ? t("composer.answerApproval")
               : recording
-              ? "Listening…"
+              ? t("composer.listening")
               : canInject
-                ? `${busyName} is working — inject now to interrupt with the queued message`
+                ? `${busyName} 正在工作 — 立即注入以打断并发送排队消息`
               : busy && canSteer
-                ? `${busyName} is working — Enter sends this into the running turn`
+                ? t("composer.busySteer", { name: busyName })
               : busy
                 ? group
-                  ? `${busyName} is working — Enter queues your message`
-                  : `${busyName} is working — sends when this turn finishes`
+                  ? t("composer.busyQueue", { name: busyName })
+                  : t("composer.busySends", { name: busyName })
                 : group
                   ? channelMode === "goal"
-                    ? `Describe what ${group.name} should finish together`
-                    : `Message ${group.name} — ${groupComposerHint(group, members ?? [])}`
-                  : `Message ${bot?.name ?? ""}`
+                    ? `描述 ${group.name} 应共同完成的目标`
+                    : `发送消息给 ${group.name} — ${hintText}`
+                  : `发送消息给 ${bot?.name ?? ""}`
           }
-          aria-label={`Message ${group ? group.name : (bot?.name ?? "")}`}
-            className="max-h-[9rem] min-h-6 min-w-0 flex-1 resize-none overflow-y-auto self-center bg-transparent px-1 py-1 text-[15px] leading-6 text-ink placeholder:text-ink-secondary focus:outline-none"
+          aria-label={`发送消息给 ${group ? group.name : (bot?.name ?? "")}`}
+          className="max-h-[9rem] min-h-6 min-w-0 flex-1 resize-none overflow-y-auto self-center bg-transparent px-1 py-1 text-[15px] leading-6 text-ink placeholder:text-ink-secondary focus:outline-none"
           />
           <div className="flex items-center gap-1">
           {/* Inject is stop-then-steer made visible. The square stop would
@@ -918,9 +926,9 @@ export function Composer({
           {busy && !locked && !canInject && (
           <button
             onClick={interruptTurn}
-            aria-label="Stop this turn"
+            aria-label={t("chat.stopTurn")}
             className="flex size-8 shrink-0 items-center justify-center rounded-full text-ink-secondary hover:bg-raised hover:text-ink"
-            title="Stop"
+            title={t("common.stop")}
           >
             <Square size={14} className="fill-current" />
           </button>
@@ -928,14 +936,14 @@ export function Composer({
         {!locked && !busy && !hasContent && capabilities.dictation.available && (
           <button
             onClick={toggleMic}
-            aria-label={recording ? "Stop dictation" : "Start dictation"}
+            aria-label={recording ? t("composer.stopDictation") : t("composer.startDictation")}
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-full",
               recording
                 ? "animate-pulse bg-danger/20 text-danger"
                 : "text-ink-secondary hover:bg-raised hover:text-ink",
             )}
-            title={recording ? "Stop dictation (Esc)" : "Dictate"}
+            title={recording ? t("composer.stopDictationEsc") : t("composer.dictate")}
           >
             <Mic size={18} />
           </button>
@@ -943,20 +951,8 @@ export function Composer({
         {hasContent && !locked && (
           <button
             onClick={send}
-            aria-label={
-              busy && canSteer
-                  ? "Send into the running turn"
-                  : busy
-                    ? "Queue message"
-                    : "Send message"
-            }
-            title={
-              busy && canSteer
-                  ? "Send into the running turn"
-                  : busy
-                    ? "Sends when the current turn finishes"
-                    : "Send"
-            }
+            aria-label={busy && canSteer ? t("composer.sendSteer") : busy ? t("composer.queueMessage") : t("composer.sendMessage")}
+            title={busy && canSteer ? t("composer.sendSteer") : busy ? t("composer.busyQueueTitle") : t("common.send")}
             className={cn(
               "flex size-8 shrink-0 items-center justify-center rounded-full text-white",
               busy && !canSteer

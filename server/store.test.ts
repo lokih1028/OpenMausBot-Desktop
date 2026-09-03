@@ -482,9 +482,9 @@ describe("Store", () => {
     const card = store.messagesFor(bot.threadId)[1];
 
     const patched = store.patchMessage(bot.threadId, card.id, {
-      card: { ...card.card!, answered: "Work & projects" },
+      card: { ...card.card!, answered: "工作与项目" },
     });
-    expect(patched?.card?.answered).toBe("Work & projects");
+    expect(patched?.card?.answered).toBe("工作与项目");
     expect(store.patchMessage(bot.threadId, "nope", {})).toBeNull();
   });
 

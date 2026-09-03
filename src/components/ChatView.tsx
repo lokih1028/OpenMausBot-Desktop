@@ -77,6 +77,7 @@ import {
 } from "@/lib/transcript-window";
 import { timelineEvents } from "@/lib/taskTimeline";
 import { useReplyDraft } from "@/lib/drafts";
+import { useT } from "@/i18n";
 
 /** Long user messages collapse behind a fade so pasted walls of text don't
  * bury the conversation; bots get full markdown. */
@@ -149,6 +150,7 @@ function TaskTimeline({ messages, busy }: { messages: Message[]; busy: boolean }
 
 /** Hover/focus-revealed copy control shared by user + bot bubbles. */
 function CopyButton({ text, className }: { text: string; className?: string }) {
+  const { t } = useT();
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -157,8 +159,8 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1200);
       }}
-      aria-label="Copy message"
-      title="Copy message"
+      aria-label={t("misc.chat.copyMessage")}
+      title={t("misc.chat.copyMessage")}
       className={cn(
         "rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100",
         className,
@@ -168,6 +170,7 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
     </button>
   );
 }
+
 
 /** A failed turn: a real error block with a retry, not a truncated pill.
  *
@@ -310,6 +313,7 @@ function Bubble({
   replyTarget?: Message;
   onReply: () => void;
 }) {
+  const { t } = useT();
   const { dispatch } = useStore();
   const user = message.role === "user";
   const [expanded, setExpanded] = useState(false);
@@ -343,9 +347,9 @@ function Bubble({
         {user && message.kind === "text" && !webhookView && !bot.busy && (
           <button
             onClick={onStartEdit}
-            aria-label="Edit message"
+            aria-label={t("misc.chat.editMessage")}
             className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
-            title="Edit message"
+            title={t("misc.chat.editMessage")}
           >
             <Pencil size={14} />
           </button>
@@ -356,9 +360,9 @@ function Bubble({
             <button
               type="button"
               onClick={onReply}
-              aria-label="Reply to message"
+              aria-label={t("misc.chat.replyAria")}
               className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
-              title="Reply"
+              title={t("misc.chat.reply")}
             >
               <MessageSquareReply size={14} />
             </button>
@@ -370,12 +374,12 @@ function Bubble({
                   patch: { pinnedMessageId: bot.pinnedMessageId === message.id ? "" : message.id },
                 })
               }
-              aria-label={bot.pinnedMessageId === message.id ? "Unpin message" : "Pin message"}
+              aria-label={bot.pinnedMessageId === message.id ? t("misc.chat.unpinMessage") : t("misc.chat.pinMessage")}
               className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
               title={
                 bot.pinnedMessageId === message.id
-                  ? "Unpin this message"
-                  : "Pin this message to the top of the thread"
+                  ? t("misc.chat.unpinTitle")
+                  : t("misc.chat.pinTitle")
               }
             >
               {bot.pinnedMessageId === message.id ? <PinOff size={14} /> : <Pin size={14} />}
@@ -472,8 +476,8 @@ function Bubble({
               {isLastBotText && !bot.busy && onRegenerate && (
                 <button
                   onClick={onRegenerate}
-                  aria-label="Regenerate response"
-                  title="Regenerate response"
+                  aria-label={t("misc.chat.regenerate")}
+                  title={t("misc.chat.regenerate")}
                   className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
                 >
                   <RefreshCw size={14} />
@@ -483,9 +487,9 @@ function Bubble({
             <button
               type="button"
               onClick={onReply}
-              aria-label="Reply to message"
+              aria-label={t("misc.chat.replyAria")}
               className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
-              title="Reply"
+              title={t("misc.chat.reply")}
             >
               <MessageSquareReply size={14} />
             </button>
@@ -497,12 +501,12 @@ function Bubble({
                   patch: { pinnedMessageId: bot.pinnedMessageId === message.id ? "" : message.id },
                 })
               }
-              aria-label={bot.pinnedMessageId === message.id ? "Unpin message" : "Pin message"}
+              aria-label={bot.pinnedMessageId === message.id ? t("misc.chat.unpinMessage") : t("misc.chat.pinMessage")}
               className="rounded-md p-1.5 text-ink-secondary opacity-0 transition-opacity hover:bg-raised hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
               title={
                 bot.pinnedMessageId === message.id
-                  ? "Unpin this message"
-                  : "Pin this message to the top of the thread"
+                  ? t("misc.chat.unpinTitle")
+                  : t("misc.chat.pinTitle")
               }
             >
               {bot.pinnedMessageId === message.id ? <PinOff size={14} /> : <Pin size={14} />}
@@ -524,7 +528,7 @@ function Bubble({
             onClick={() => switchTo(versions[versionIndex - 1])}
             disabled={versionIndex <= 0 || bot.busy}
             className="rounded p-0.5 hover:bg-raised hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
-            title="Previous version"
+            title={t("misc.chat.prevVersion")}
           >
             <ChevronLeft size={14} />
           </button>
@@ -535,7 +539,7 @@ function Bubble({
             onClick={() => switchTo(versions[versionIndex + 1])}
             disabled={versionIndex >= versions.length - 1 || bot.busy}
             className="rounded p-0.5 hover:bg-raised hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
-            title="Next version"
+            title={t("misc.chat.nextVersion")}
           >
             <ChevronRight size={14} />
           </button>
@@ -591,11 +595,12 @@ function ActivityChip({ message }: { message: Message }) {
 }
 
 function ScreenFrame({ png, mime }: { png: string; mime?: string }) {
+  const { t } = useT();
   return (
     <div className="flex justify-start">
       <img
         src={`data:${mime ?? "image/png"};base64,${png}`}
-        alt="Bot's screen"
+        alt={t("misc.chat.botsScreen")}
         className="w-fit max-w-[min(42rem,78%)] rounded-2xl border border-hairline/40"
       />
     </div>
@@ -808,10 +813,11 @@ function PinnedBanner({
   onJump: (messageId: string) => void;
   onUnpin: () => void;
 }) {
+  const { t } = useT();
   const pinned = messages.find((m) => m.id === pinnedId);
   if (!pinned || pinned.kind !== "text") return null;
   const sender =
-    pinned.role === "user" ? "You" : (pinned.from?.name ?? bot.name);
+    pinned.role === "user" ? t("common.you") : (pinned.from?.name ?? bot.name);
   const text = (pinned.text ?? "").replace(/\s+/g, " ").trim();
   if (!text) return null;
   return (
@@ -821,15 +827,15 @@ function PinnedBanner({
         <button
           onClick={() => onJump(pinned.id)}
           className="flex min-w-0 flex-1 items-baseline gap-2 text-left"
-          title="Jump to the pinned message"
+          title={t("misc.chat.jumpToPinned")}
         >
           <span className="shrink-0 text-[11.5px] font-medium text-accent">{sender}</span>
           <span className="truncate text-[12.5px] text-ink-secondary">{text}</span>
         </button>
         <button
           onClick={onUnpin}
-          aria-label="Unpin message"
-          title="Unpin"
+          aria-label={t("misc.chat.unpinMessage")}
+          title={t("sidebar.unpin")}
           className="shrink-0 rounded p-0.5 text-ink-secondary hover:bg-raised hover:text-ink"
         >
           <X size={13} />
@@ -840,6 +846,7 @@ function PinnedBanner({
 }
 
 export function ChatView({ bot }: { bot: Bot }) {
+  const { t } = useT();
   const { state, dispatch } = useStore();
   const scrollRef = useRef<HTMLDivElement>(null);
   const composerDockRef = useRef<HTMLDivElement>(null);
@@ -1158,7 +1165,7 @@ export function ChatView({ bot }: { bot: Bot }) {
               "rounded-md p-1.5 hover:bg-raised",
               state.inspectorOpen ? "text-accent" : "text-ink-secondary hover:text-ink",
             )}
-            title="Inspector — runtime events and raw protocol for this thread"
+            title={t("misc.chat.inspectorTitle")}
           >
             <Bug size={18} />
           </button>
@@ -1314,11 +1321,11 @@ export function ChatView({ bot }: { bot: Bot }) {
       {!follow && (
         <button
           onClick={jumpToLatest}
-          aria-label="Jump to latest messages"
+          aria-label={t("misc.chat.jumpToLatest")}
           className="animate-pop-in absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-hairline/40 bg-raised px-3 py-1.5 text-[12.5px] text-ink shadow-lg hover:bg-raised-hover"
           style={{ bottom: composerDock.height }}
         >
-          <ArrowDown size={13} /> Jump to latest
+          <ArrowDown size={13} /> {t("misc.chat.jumpToLatest")}
         </button>
       )}
 
